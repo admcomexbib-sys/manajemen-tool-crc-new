@@ -33,6 +33,9 @@
 
         // Variabel Lingkungan
         // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// index.html: Ganti BARIS 96-98
+
+// Variabel Lingkungan BARU (Dipindahkan dari config.js)
 const firebaseConfig = {
   apiKey: "AIzaSyD8J9MKV1HmKUUDr-_mJioU9ORFs0Kp2cA",
   authDomain: "manajemen-tool-crc.firebaseapp.com",
@@ -42,8 +45,10 @@ const firebaseConfig = {
   messagingSenderId: "856017334993",
   appId: "1:856017334993:web:78793c395d2e8999184bf0",
   measurementId: "G-TKS775MDLP"
-};
-
+}; 
+// Definisikan variabel lain menggunakan objek konfigurasi yang valid
+const appId = firebaseConfig.appId;
+const initialAuthToken = null; // Karena Anda tidak menggunakan token kustom saat ini, atur saja ke null
         let db, auth;
         let userId = null;
         let isAuthReady = false;
@@ -824,9 +829,7 @@ const firebaseConfig = {
 </head>
 
 <body class="bg-gray-50 font-sans min-h-screen">
-  
-    
-    
+      
     <header class="bg-green-700 text-white p-4 shadow-xl">
         <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
             <h1 class="text-3xl font-extrabold tracking-tight">CRC Tool Management</h1>
