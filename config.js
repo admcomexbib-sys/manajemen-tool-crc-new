@@ -5,7 +5,7 @@
 // Variabel Lingkungan (Konfigurasi Firebase yang Benar untuk sistemmanajementool)
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyCyBJj9kvWcmMhmh4R2X9IQw7jL3QSg_lM",
+  apiKey: "AIzaSyAGmUey37EUhyg4tzsVQo0inn3qtT9YyWw",
   authDomain: "sistemmanajementool.firebaseapp.com",
   projectId: "sistemmanajementool",
   storageBucket: "sistemmanajementool.firebasestorage.app",
