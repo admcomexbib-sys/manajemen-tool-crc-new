@@ -78,49 +78,52 @@ const firebaseConfig = {
         
         const getToolCollectionRef = () => collection(db, `artifacts/${appId}/users/${userId}/crc_tools`);
         const getLendingCollectionRef = () => collection(db, `artifacts/${appId}/users/${userId}/crc_lendings`);
-        let initialAuthToken = null; // ✅ Tambahkan baris ini
+        
 
         // ===========================================
         // INIT & AUTHENTIKASI FIREBASE (Auto Anon/Token)
         // ===========================================
-        window.onload = async () => {
-            try {
-                const app = initializeApp(firebaseConfig);
-                const appId = firebaseConfig.appId; // ✅ Ambil dari config
+        let initialAuthToken = null; // Tambah ini di luar window.onload
 
-                db = getFirestore(app);
-                auth = getAuth(app);
-            } catch (error) {
-                console.error("Firebase Initialization Failed:", error);
-                return;
-            }
-                let initialAuthToken = null; // ✅ Tambah ini di luar atau di atas blok onload
-            onAuthStateChanged(auth, async (user) => {
-                if (!user) {
-                    try {
-                        if (initialAuthToken) await signInWithCustomToken(auth, initialAuthToken);
-                        else await signInAnonymously(auth);
-                    } catch (error) {
-                        console.error("Error signing in:", error);
-                        // Fallback jika semua autentikasi gagal
-                        userId = crypto.randomUUID(); 
-                    }
-                }
-                
-                userId = auth.currentUser?.uid || userId;
-                if (document.getElementById('user-id-display')) {
-                    document.getElementById('user-id-display').textContent = userId;
-                }
-                isAuthReady = true;
+window.onload = async () => {
+  try {
+    const app = initializeApp(firebaseConfig);
+    const appId = firebaseConfig.appId; // ✅ FIX appId
+    db = getFirestore(app);
+    auth = getAuth(app);
 
-                // Setelah Auth Ready, inisialisasi peran ke Guest (default) dan update UI
-                isAdmin = false; 
-                updateUIBasedOnRole();
-                
-                loadDataListeners();
-                window.switchView(currentView);
-            });
-        };
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        try {
+          // ✅ Aman: cek dulu variabelnya
+          if (typeof initialAuthToken !== "undefined" && initialAuthToken) {
+            await signInWithCustomToken(auth, initialAuthToken);
+          } else {
+            await signInAnonymously(auth);
+          }
+        } catch (error) {
+          console.error("Error signing in:", error);
+          userId = crypto.randomUUID();
+        }
+      }
+
+      userId = auth.currentUser?.uid || userId;
+      if (document.getElementById("user-id-display")) {
+        document.getElementById("user-id-display").textContent = userId;
+      }
+      isAuthReady = true;
+
+      isAdmin = false;
+      updateUIBasedOnRole();
+
+      loadDataListeners();
+      window.switchView(currentView);
+    });
+  } catch (error) {
+    console.error("Firebase Initialization Failed:", error);
+  }
+};
+
         
         // ===========================================
         // FUNGSI ROLE MANAGEMENT (LOGIN)
