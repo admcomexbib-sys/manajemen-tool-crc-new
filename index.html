@@ -25,7 +25,7 @@
     
     <!-- Firebase SDKs -->
     <script type="module">
-        
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
   import { 
     getFirestore, collection, doc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, query, runTransaction, Timestamp
@@ -78,6 +78,7 @@ const firebaseConfig = {
         
         const getToolCollectionRef = () => collection(db, `artifacts/${appId}/users/${userId}/crc_tools`);
         const getLendingCollectionRef = () => collection(db, `artifacts/${appId}/users/${userId}/crc_lendings`);
+        let initialAuthToken = null; // ✅ Tambahkan baris ini
 
         // ===========================================
         // INIT & AUTHENTIKASI FIREBASE (Auto Anon/Token)
@@ -85,13 +86,15 @@ const firebaseConfig = {
         window.onload = async () => {
             try {
                 const app = initializeApp(firebaseConfig);
+                const appId = firebaseConfig.appId; // ✅ Ambil dari config
+
                 db = getFirestore(app);
                 auth = getAuth(app);
             } catch (error) {
                 console.error("Firebase Initialization Failed:", error);
                 return;
             }
-
+                let initialAuthToken = null; // ✅ Tambah ini di luar atau di atas blok onload
             onAuthStateChanged(auth, async (user) => {
                 if (!user) {
                     try {
