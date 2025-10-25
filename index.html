@@ -743,7 +743,11 @@ if (loan.fotoEvidenURL && (loan.fotoEvidenURL.startsWith('http') || loan.fotoEvi
         };
         
         window.openReturnEvidenceModal = (loanId) => {
-            const modal = document.getElementById('return-evidence-modal');
+            const modal = document.getElementById("return-evidence-modal");
+  // simpan loanId ke tombol “Simpan” agar bisa dibaca saat finalizeReturn
+  document
+    .getElementById("finalize-return-btn")
+    .setAttribute("data-loan-id", loanId);
             const form = document.getElementById('return-evidence-form');
             const fileInput = document.getElementById('return-foto-input');
             const returnerInput = document.getElementById('returner-name-input');
@@ -774,33 +778,55 @@ if (loan.fotoEvidenURL && (loan.fotoEvidenURL.startsWith('http') || loan.fotoEvi
         };
 
         window.finalizeReturn = async () => {
-           // inside window.finalizeReturn
-           const loanId = document
-  .getElementById('finalize-return-btn')
-  .getAttribute('data-loan-id');
+  // 🔹 ambil ID peminjaman dari tombol Simpan di modal
+  const loanId = document
+    .getElementById("finalize-return-btn")
+    .getAttribute("data-loan-id");
 
-const fileInput = document.getElementById('return-foto-input');
-let returnFotoEvidenURL = `[File Attached] ${fileInput.files[0] ? fileInput.files[0].name : "Foto_Tidak_Tersedia"}`;
+  // 🔹 ambil elemen input
+  const fileInput = document.getElementById("return-foto-input");
+  const returnerName = document.getElementById("returner-name-input").value.trim();
+  const receiverName = document.getElementById("receiver-name-input").value.trim();
 
-if (fileInput.files && fileInput.files[0]) {
+  // 🔹 validasi
+  if (!loanId) {
+    alert("❌ Gagal: ID peminjaman tidak ditemukan (loanId). Pastikan klik tombol Kembalikan dari daftar.");
+    return;
+  }
+
+  if (!fileInput.files[0]) {
+    alert("Silakan pilih foto bukti pengembalian terlebih dahulu.");
+    return;
+  }
+
+  // 🔹 upload ke Cloudinary
+  let returnFotoEvidenURL = `[File Attached] ${fileInput.files[0].name}`;
   const uploadedUrl = await uploadToCloudinary(fileInput.files[0]);
   if (uploadedUrl) {
     returnFotoEvidenURL = uploadedUrl;
   } else {
-    console.warn("Upload Cloudinary gagal saat return — menyimpan placeholder nama file.");
+    console.warn("Upload Cloudinary gagal — menyimpan placeholder nama file.");
   }
-}
 
-const loanRef = doc(getLendingCollectionRef(), loanId);
-await updateDoc(loanRef, {
-  isReturned: true,
-  returnDate: Date.now(),
-  returnerName: returnerName,
-  receiverName: receiverName,
-  returnFotoEvidenURL: returnFotoEvidenURL
-});
+  // 🔹 update Firestore
+  try {
+    const loanRef = doc(getLendingCollectionRef(), loanId);
+    await updateDoc(loanRef, {
+      isReturned: true,
+      returnDate: Date.now(),
+      returnerName,
+      receiverName,
+      returnFotoEvidenURL,
+    });
 
-        };
+    alert("✅ Pengembalian berhasil disimpan!");
+    window.closeModal("return-evidence-modal");
+  } catch (error) {
+    console.error("Firestore update error:", error);
+    alert("❌ Gagal menyimpan data pengembalian ke Firestore.");
+  }
+};
+
 
         // ===========================================
         // FUNGSI INVENTARIS (TAMBAH ALAT) & GEMINI
