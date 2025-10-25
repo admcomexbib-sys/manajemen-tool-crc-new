@@ -624,36 +624,70 @@ const getLendingCollectionRef = () => collection(db, "lendings");
         };
         
         window.addLending = async (event) => {
-            // inside window.addLending
-const fotoInput = document.getElementById('peminjam-foto-input');
-let fotoEvidenURL = `[File Attached] ${fotoInput.files[0] ? fotoInput.files[0].name : "Foto_Tidak_Tersedia"}`;
+  event.preventDefault();
 
-// Jika file tersedia, upload ke Cloudinary terlebih dahulu
-if (fotoInput.files && fotoInput.files[0]) {
-  const uploadedUrl = await uploadToCloudinary(fotoInput.files[0]);
-  if (uploadedUrl) {
-    fotoEvidenURL = uploadedUrl; // simpan URL Cloudinary
-  } else {
-    // fallback: kita tetap simpan placeholder nama file jika upload gagal
-    console.warn("Upload Cloudinary gagal — menyimpan placeholder nama file.");
+  const fotoInput = document.getElementById("peminjam-foto-input");
+  const toolId = document.getElementById("pinjam-tool-select").value;
+  const borrowedQty = parseInt(document.getElementById("pinjam-jumlah-input").value);
+  const borrowerName = document.getElementById("peminjam-nama-input").value.trim();
+  const borrowerSection = document.getElementById("peminjam-section-input").value.trim();
+  const keperluan = document.getElementById("peminjam-keperluan-input").value.trim();
+
+  if (!toolId || !borrowedQty || !borrowerName || !keperluan) {
+    alert("❌ Lengkapi semua data sebelum menyimpan.");
+    return;
   }
-}
 
-// kemudian simpan ke Firestore seperti sebelumnya, tapi gunakan fotoEvidenURL
-const newLoanRef = doc(lendingRef);
-await setDoc(newLoanRef, {
-  toolId: toolId,
-  toolName: selectedTool.nama,
-  borrowedQty: borrowedQty,
-  borrowerName: borrowerName,
-  borrowerSection: borrowerSection,
-  keperluan: keperluan,
-  fotoEvidenURL: fotoEvidenURL, 
-  borrowDate: Timestamp.now(),
-  isReturned: false
-});
+  const selectedTool = allTools.find(t => t.id === toolId);
+  const borrowedNow = getBorrowedQty(toolId);
+  const availableStock = selectedTool.jumlah - borrowedNow;
 
-        };
+  // 🔹 Validasi stok dan kondisi alat
+  if (selectedTool.kondisi !== "baik") {
+    alert(`⚠️ Alat "${selectedTool.nama}" tidak dapat dipinjam karena kondisinya ${selectedTool.kondisi.toUpperCase()}.`);
+    return;
+  }
+
+  if (availableStock <= 0) {
+    alert(`⚠️ Stok alat "${selectedTool.nama}" sedang habis atau masih dipinjam. Tunggu pengembalian terlebih dahulu.`);
+    return;
+  }
+
+  if (borrowedQty > availableStock) {
+    alert(`⚠️ Jumlah yang diminta (${borrowedQty}) melebihi stok tersedia (${availableStock}).`);
+    return;
+  }
+
+  // 🔹 Upload foto ke Cloudinary
+  let fotoEvidenURL = `[File Attached] ${fotoInput.files[0] ? fotoInput.files[0].name : "Foto_Tidak_Tersedia"}`;
+  if (fotoInput.files && fotoInput.files[0]) {
+    const uploadedUrl = await uploadToCloudinary(fotoInput.files[0]);
+    if (uploadedUrl) {
+      fotoEvidenURL = uploadedUrl;
+    } else {
+      console.warn("⚠️ Upload Cloudinary gagal — menyimpan placeholder nama file.");
+    }
+  }
+
+  // 🔹 Simpan ke Firestore
+  const newLoanRef = doc(getLendingCollectionRef());
+  await setDoc(newLoanRef, {
+    toolId,
+    toolName: selectedTool.nama,
+    borrowedQty,
+    borrowerName,
+    borrowerSection,
+    keperluan,
+    fotoEvidenURL,
+    borrowDate: Timestamp.now(),
+    isReturned: false,
+  });
+
+  document.getElementById("add-lending-form").reset();
+  alert("✅ Peminjaman berhasil disimpan!");
+};
+
+
 
         // ===========================================
         // FUNGSI PENGEMBALIAN & RIWAYAT
@@ -685,7 +719,16 @@ if (loan.fotoEvidenURL && (loan.fotoEvidenURL.startsWith('http') || loan.fotoEvi
     </div>
   `;
 } else {
-  evidenceDisplay = `<span onclick="window.openPhotoModal('${loan.fotoEvidenURL || ''}')" class="text-blue-500 hover:text-blue-700 clickable-text">Lihat Foto Eviden</span>`;
+  evidenceDisplay = 
+  loan.fotoEvidenURL && (loan.fotoEvidenURL.startsWith('http://') || loan.fotoEvidenURL.startsWith('https://'))
+    ? `
+      <div class="flex items-center justify-center space-x-2">
+        <img src="${loan.fotoEvidenURL}" alt="Foto Eviden" class="h-12 w-16 object-cover rounded-md shadow-sm cursor-pointer" onclick="window.openPhotoModal('${loan.fotoEvidenURL}')" />
+        <span class="text-blue-500 hover:text-blue-700 clickable-text" onclick="window.openPhotoModal('${loan.fotoEvidenURL}')">Lihat</span>
+      </div>
+    `
+    : `<span onclick="window.openPhotoModal('${loan.fotoEvidenURL || ''}')" class="text-blue-500 hover:text-blue-700 clickable-text">Lihat Foto Eviden</span>`;
+
 }
 
 
@@ -707,40 +750,44 @@ if (loan.fotoEvidenURL && (loan.fotoEvidenURL.startsWith('http') || loan.fotoEvi
         };
         
         const renderReturnHistory = (lendings) => {
-            const tbody = document.getElementById('return-history-body');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            
-            // Sort by return date descending
-            lendings.sort((a, b) => (b.returnDate || 0) - (a.returnDate || 0));
+  const tbody = document.getElementById('return-history-body');
+  if (!tbody) return;
+  tbody.innerHTML = '';
 
-            if (lendings.length === 0) {
-                 tbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-gray-500">Belum ada riwayat pengembalian.</td></tr>`;
-                 return;
-            }
+  // 🔹 Tampilkan semua data (tidak dibatasi 10)
+  const allSorted = [...lendings].sort((a, b) => (b.returnDate || 0) - (a.returnDate || 0));
 
-            lendings.slice(0, 10).forEach(loan => {
-                const tr = document.createElement('tr');
-                tr.className = 'border-b hover:bg-gray-50';
+  if (allSorted.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="py-4 text-center text-gray-500">Belum ada riwayat peminjaman/pengembalian.</td></tr>`;
+    return;
+  }
 
-                const returnDate = loan.returnDate ? new Date(loan.returnDate).toLocaleDateString('id-ID') : 'N/A';
-                
-                const returnEvidenceDisplay = loan.returnFotoEvidenURL 
-                    ? `<span onclick="window.openPhotoModal('${loan.returnFotoEvidenURL}')" class="text-green-500 hover:text-green-700 clickable-text">Lihat Eviden Kembali</span>`
-                    : `<span class="text-gray-400">N/A</span>`;
+  allSorted.forEach(loan => {
+    const tr = document.createElement('tr');
+    tr.className = 'border-b hover:bg-gray-50';
 
-                tr.innerHTML = `
-                    <td class="px-4 py-3 text-sm font-medium text-gray-600 whitespace-nowrap">${loan.toolName}</td>
-                    <td class="px-4 py-3 text-center text-sm">${loan.borrowedQty}</td>
-                    <td class="px-4 py-3 text-sm">${loan.borrowerName}</td>
-                    <td class="px-4 py-3 text-sm">${loan.returnerName || '-'}</td>
-                    <td class="px-4 py-3 text-sm">${loan.receiverName || '-'}</td>
-                    <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${returnDate}</td>
-                    <td class="px-4 py-3 text-center text-sm">${returnEvidenceDisplay}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        };
+    const borrowDate = loan.borrowDate ? new Date(loan.borrowDate).toLocaleDateString('id-ID') : '-';
+    const returnDate = loan.returnDate ? new Date(loan.returnDate).toLocaleDateString('id-ID') : '-';
+    const returnEvidenceDisplay = loan.returnFotoEvidenURL 
+      ? `<span onclick="window.openPhotoModal('${loan.returnFotoEvidenURL}')" class="text-green-500 hover:text-green-700 clickable-text">Lihat Eviden Kembali</span>`
+      : `<span class="text-gray-400">Belum Ada</span>`;
+
+    tr.innerHTML = `
+      <td class="px-4 py-3 text-sm font-medium text-gray-600 whitespace-nowrap">${loan.toolName}</td>
+      <td class="px-4 py-3 text-center text-sm">${loan.borrowedQty}</td>
+      <td class="px-4 py-3 text-sm">${loan.borrowerName}</td>
+      <td class="px-4 py-3 text-sm">${loan.borrowerSection || '-'}</td>
+      <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${borrowDate}</td>
+      <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${returnDate}</td>
+      <td class="px-4 py-3 text-center text-sm">${returnEvidenceDisplay}</td>
+      <td class="px-4 py-3 text-center text-sm font-semibold ${loan.isReturned ? 'text-green-600' : 'text-red-600'}">
+        ${loan.isReturned ? 'Selesai' : 'Belum Kembali'}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+};
+
         
         window.openReturnEvidenceModal = (loanId) => {
             const modal = document.getElementById("return-evidence-modal");
