@@ -687,6 +687,33 @@ const getLendingCollectionRef = () => collection(db, "lendings");
   alert("✅ Peminjaman berhasil disimpan!");
 };
 
+// ==========================
+// Tombol PINJAM dan Anti-Spam
+// ==========================
+const pinjamButton = document.getElementById("pinjam-tool-btn");
+let sedangProses = false;
+
+pinjamButton.addEventListener("click", async (event) => {
+  event.preventDefault(); // cegah reload form
+
+  if (sedangProses) return; // blokir klik ganda
+  sedangProses = true;
+
+  pinjamButton.disabled = true;
+  pinjamButton.textContent = "Memproses...";
+
+  try {
+    await tambahPeminjaman(); // <-- pastikan ini fungsi kamu untuk simpan data ke Firestore
+    alert("Peminjaman berhasil!");
+  } catch (error) {
+    console.error("Gagal meminjam:", error);
+    alert("Terjadi kesalahan saat meminjam.");
+  } finally {
+    sedangProses = false;
+    pinjamButton.disabled = false;
+    pinjamButton.textContent = "PINJAM (Isi Semua Kolom)";
+  }
+});
 
 
         // ===========================================
