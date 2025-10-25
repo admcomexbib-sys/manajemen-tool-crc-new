@@ -727,6 +727,9 @@ pinjamButton.addEventListener("click", async (event) => {
                 tbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-gray-500">Tidak ada pinjaman aktif.</td></tr>`;
                 return;
             }
+const statusHTML = loan.isReturned
+  ? `<span class="status-label text-green-600 font-semibold">Dikembalikan</span>`
+  : `<span class="status-label text-red-600 font-semibold">Dipinjam</span>`;
 
             lendings.forEach(loan => {
               
@@ -787,6 +790,11 @@ if (loan.fotoEvidenURL && (loan.fotoEvidenURL.startsWith('http') || loan.fotoEvi
     tbody.innerHTML = `<tr><td colspan="8" class="py-4 text-center text-gray-500">Belum ada riwayat peminjaman/pengembalian.</td></tr>`;
     return;
   }
+const kondisiHTML = `
+  <span class="kondisi-label ${loan.condition === 'rusak' ? 'text-red-600' : 'text-green-600'}">
+    ${loan.condition}
+  </span>
+`;
 
   allSorted.forEach(loan => {
     const tr = document.createElement('tr');
@@ -1074,6 +1082,62 @@ async function hapusSemuaDataDatabase() {
 
 document.getElementById("dev-delete-db-btn").addEventListener("click", hapusSemuaDataDatabase);
 
+// ============================================================
+// 🔎 FITUR FILTER & SEARCH UNTUK PEMINJAMAN AKTIF
+// ============================================================
+const searchActiveInput = document.getElementById("search-active-lending");
+const filterActiveSelect = document.getElementById("filter-active-status");
+
+searchActiveInput.addEventListener("input", filterActiveLendings);
+filterActiveSelect.addEventListener("change", filterActiveLendings);
+
+function filterActiveLendings() {
+  const keyword = searchActiveInput.value.toLowerCase();
+  const filterStatus = filterActiveSelect.value;
+  const list = document.querySelectorAll("#active-lendings-table tbody tr");
+
+  list.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    const returned = row.querySelector(".status-label")?.textContent.toLowerCase().includes("dikembalikan");
+
+    let matchKeyword = text.includes(keyword);
+    let matchStatus = 
+      filterStatus === "all" ||
+      (filterStatus === "belum" && !returned) ||
+      (filterStatus === "sudah" && returned);
+
+    row.style.display = matchKeyword && matchStatus ? "" : "none";
+  });
+}
+
+// ============================================================
+// 📜 FITUR FILTER & SEARCH UNTUK RIWAYAT PENGEMBALIAN
+// ============================================================
+const searchReturnInput = document.getElementById("search-return-history");
+const filterReturnSelect = document.getElementById("filter-return-status");
+
+searchReturnInput.addEventListener("input", filterReturnHistory);
+filterReturnSelect.addEventListener("change", filterReturnHistory);
+
+function filterReturnHistory() {
+  const keyword = searchReturnInput.value.toLowerCase();
+  const filterStatus = filterReturnSelect.value;
+  const list = document.querySelectorAll("#return-history-table tbody tr");
+
+  list.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    const condition = row.querySelector(".kondisi-label")?.textContent.toLowerCase();
+
+    let matchKeyword = text.includes(keyword);
+    let matchStatus = 
+      filterStatus === "all" ||
+      (filterStatus === "baik" && condition.includes("baik")) ||
+      (filterStatus === "rusak" && condition.includes("rusak"));
+
+    row.style.display = matchKeyword && matchStatus ? "" : "none";
+  });
+}
+
     </script>
 </head>
 
@@ -1285,6 +1349,15 @@ document.getElementById("dev-delete-db-btn").addEventListener("click", hapusSemu
                                 class="w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-yellow-500 file:text-white hover:file:bg-yellow-600">
                         </div>
                     </div>
+<div class="flex justify-between items-center mb-3">
+  <input type="text" id="search-active-lending" placeholder="Cari nama / alat / section..."
+    class="border p-2 rounded-lg w-1/2 focus:ring focus:ring-yellow-300" />
+  <select id="filter-active-status" class="border p-2 rounded-lg">
+    <option value="all">Semua</option>
+    <option value="belum">Belum Dikembalikan</option>
+    <option value="sudah">Sudah Dikembalikan</option>
+  </select>
+</div>
 
                     <div class="mt-6">
                         <button type="submit" id="pinjam-tool-btn" disabled class="w-full bg-gray-400 text-white p-3 rounded-lg font-bold transition duration-200 opacity-50">
@@ -1349,6 +1422,15 @@ document.getElementById("dev-delete-db-btn").addEventListener("click", hapusSemu
                 </div>
             </section>
         </div>
+<div class="flex justify-between items-center mb-3">
+  <input type="text" id="search-return-history" placeholder="Cari nama / alat / tanggal..."
+    class="border p-2 rounded-lg w-1/2 focus:ring focus:ring-blue-300" />
+  <select id="filter-return-status" class="border p-2 rounded-lg">
+    <option value="all">Semua</option>
+    <option value="baik">Kondisi Baik</option>
+    <option value="rusak">Kondisi Rusak</option>
+  </select>
+</div>
 
     </main>
 
