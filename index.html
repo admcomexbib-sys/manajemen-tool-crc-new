@@ -742,24 +742,6 @@ pinjamButton.addEventListener("click", async (event) => {
   });
 }
 
-
-
-                tr.innerHTML = `
-                    <td class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">${loan.toolName}</td>
-                    <td class="px-4 py-3 text-center">${loan.borrowedQty}</td>
-                    <td class="px-4 py-3 text-sm">${loan.borrowerName} (${loan.borrowerSection})</td>
-                    <td class="px-4 py-3 text-sm">${loan.keperluan || '-'}</td>
-                    <td class="px-4 py-3 text-sm whitespace-nowrap">${borrowDate}</td>
-                    <td class="px-4 py-3 text-center text-sm">
-                        ${evidenceDisplay}
-                    </td>
-                    <td class="px-4 py-3 text-right">
-                        <button onclick="window.openReturnEvidenceModal('${loan.id}')" class="bg-green-600 text-white px-3 py-1 rounded-lg text-sm font-semibold hover:bg-green-700 transition duration-150">Kembalikan</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        };
         
         function renderReturnHistory(loans) {
   const tbody = document.querySelector("#return-history-table tbody");
