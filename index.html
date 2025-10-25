@@ -668,7 +668,9 @@ const getLendingCollectionRef = () => collection(db, "lendings");
       console.warn("⚠️ Upload Cloudinary gagal — menyimpan placeholder nama file.");
     }
   }
-
+// ==========================
+// Tombol PINJAM dan Anti-Spam
+// ==========================
   // 🔹 Simpan ke Firestore
   const newLoanRef = doc(getLendingCollectionRef());
   await setDoc(newLoanRef, {
@@ -687,9 +689,6 @@ const getLendingCollectionRef = () => collection(db, "lendings");
   alert("✅ Peminjaman berhasil disimpan!");
 };
 
-// ==========================
-// Tombol PINJAM dan Anti-Spam
-// ==========================
 const pinjamButton = document.getElementById("pinjam-tool-btn");
 let sedangProses = false;
 
@@ -703,10 +702,10 @@ pinjamButton.addEventListener("click", async (event) => {
   pinjamButton.textContent = "Memproses...";
 
   try {
-    await tambahPeminjaman(); // <-- pastikan ini fungsi kamu untuk simpan data ke Firestore
-    alert("Peminjaman berhasil!");
+    await window.addLending(event); // 🔹 panggil fungsi asli kamu
+    console.log("✅ Data peminjaman berhasil diproses!");
   } catch (error) {
-    console.error("Gagal meminjam:", error);
+    console.error("❌ Gagal meminjam:", error);
     alert("Terjadi kesalahan saat meminjam.");
   } finally {
     sedangProses = false;
