@@ -775,6 +775,10 @@ if (loan.fotoEvidenURL && (loan.fotoEvidenURL.startsWith('http') || loan.fotoEvi
 
         window.finalizeReturn = async () => {
            // inside window.finalizeReturn
+           const loanId = document
+  .getElementById('finalize-return-btn')
+  .getAttribute('data-loan-id');
+
 const fileInput = document.getElementById('return-foto-input');
 let returnFotoEvidenURL = `[File Attached] ${fileInput.files[0] ? fileInput.files[0].name : "Foto_Tidak_Tersedia"}`;
 
