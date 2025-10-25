@@ -68,30 +68,94 @@ const firebaseConfig = {
                 .reduce((sum, loan) => sum + loan.borrowedQty, 0);
         };
         // ============================
-// 🔧 Deklarasi global
 // ============================
-let appId;
-let db;
-let auth;
-let userId;
-let isAdmin = false;
-let isAuthReady = false;
+  // 🔧 Deklarasi variabel global
+  // ============================
+  let appId;
+  let db;
+  let auth;
+  let userId;
+  let isAdmin = false;
+  let isAuthReady = false;
+  let initialAuthToken = null;
 
-let currentView = 'dashboard';
-let currentInventoryFilter = 'all';
-let allTools = [];
-let allLendings = [];
+  // ✅ Variabel tambahan yang wajib ada
+  let currentView = "dashboard";
+  let currentInventoryFilter = "all";
+  let allTools = [];
+  let allLendings = [];
 
+  // ============================
+  // 🔐 Login & Modal
+  // ============================
+  window.openLoginModal = () => {
+    document.getElementById("login-modal").classList.remove("hidden");
+    document.getElementById("login-error").classList.add("hidden");
+  };
 
+  window.closeLoginModal = () => {
+    document.getElementById("login-modal").classList.add("hidden");
+  };
 
-        const getToolCollectionRef = () => collection(db, `artifacts/${appId}/users/${userId}/crc_tools`);
-        const getLendingCollectionRef = () => collection(db, `artifacts/${appId}/users/${userId}/crc_lendings`);
-        
+  // ============================
+  // 🧑‍💻 Handle Login Admin
+  // ============================
+  window.handleAdminLogin = async (event) => {
+    event.preventDefault();
 
-        // ===========================================
-        // INIT & AUTHENTIKASI FIREBASE (Auto Anon/Token)
-        // ===========================================
-        let initialAuthToken = null; // Tambah ini di luar window.onload
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+
+    if (username === "admin" && password === "admin123") {
+      isAdmin = true;
+      updateUIBasedOnRole();
+      closeLoginModal();
+    } else {
+      const errorBox = document.getElementById("login-error");
+      errorBox.classList.remove("hidden");
+      errorBox.textContent = "Username atau password salah.";
+    }
+  };
+
+  // ============================
+  // 🧩 Update Tampilan Berdasarkan Role
+  // ============================
+  function updateUIBasedOnRole() {
+    const modeText = document.getElementById("user-mode");
+    if (isAdmin) {
+      modeText.textContent = "Mode: Admin";
+      document.querySelectorAll(".admin-only").forEach((el) => {
+        el.classList.remove("hidden");
+      });
+    } else {
+      modeText.textContent = "Mode: Guest (Non-Admin)";
+      document.querySelectorAll(".admin-only").forEach((el) => {
+        el.classList.add("hidden");
+      });
+    }
+
+    // ✅ Gunakan currentView agar sesuai tab aktif
+    switchView(currentView);
+  }
+
+  // ============================
+  // 📋 Navigasi antar tab
+  // ============================
+  window.switchView = (view) => {
+    currentView = view;
+    document.querySelectorAll(".main-section").forEach((section) => {
+      section.classList.add("hidden");
+    });
+    document.getElementById(view).classList.remove("hidden");
+
+    // ubah gaya tombol tab aktif
+    document.querySelectorAll(".tab-button").forEach((btn) => {
+      btn.classList.remove("border-b-2", "border-blue-600", "text-blue-600");
+    });
+    document
+      .querySelector(`[data-view="${view}"]`)
+      .classList.add("border-b-2", "border-blue-600", "text-blue-600");
+  };
 
 window.onload = async () => {
   try {
