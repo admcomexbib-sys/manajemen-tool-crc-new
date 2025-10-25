@@ -1032,8 +1032,6 @@ if (loan.fotoEvidenURL && (loan.fotoEvidenURL.startsWith('http') || loan.fotoEvi
 // 👨‍💻 FITUR DEVELOPER-ONLY ACCESS
 // ============================================================
 
-import { getFirestore, collection, getDocs, deleteDoc, doc } 
-  from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
 
 const DEV_KEY = "D3V-ACCESS-2025"; // 🔐 Kunci rahasia developer — ubah sesuai keinginan
 const db = getFirestore();
@@ -1072,6 +1070,7 @@ async function hapusSemuaDataDatabase() {
     console.error("❌ Gagal menghapus database:", error);
     alert("Terjadi kesalahan saat menghapus data. Cek konsol untuk detail.");
   }
+  
 }
 
 document.getElementById("dev-delete-db-btn").addEventListener("click", hapusSemuaDataDatabase);
