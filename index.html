@@ -1,212 +1,1312 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Manajemen Tools CRC</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-    body { font-family: 'Inter', sans-serif; background-color: #f7ffec; }
-    .modal { background-color: rgba(0, 0, 0, 0.5); z-index: 50; }
-    .clickable-text { cursor: pointer; text-decoration: underline; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manajemen Tools CRC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Menggunakan font Inter dan memastikan tampilan responsif */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f7ffec; }
+        .tab-content { min-height: 60vh; }
+        /* Penting untuk memastikan tabel dapat di-scroll horizontal di ponsel */
+        .tool-table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; } 
+        /* Menambahkan kursor pointer untuk kartu yang dapat diklik */
+        .clickable-card { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .clickable-card:hover { transform: translateY(-3px); box-shadow: 0 15px 20px -3px rgba(0, 0, 0, 0.1), 0 6px 8px -4px rgba(0, 0, 0, 0.05); }
+        .card { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05); }
+        .loading-spinner { border: 4px solid rgba(255, 255, 255, 0.3); border-top: 4px solid #fff; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Style untuk modal */
+        .modal { background-color: rgba(0, 0, 0, 0.5); z-index: 50; }
+        .clickable-text { cursor: pointer; text-decoration: underline; }
+    </style>
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
 
-  <!-- Firebase SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
-    import { getFirestore, collection, doc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, query, runTransaction, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
-    import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+  import { 
+    getFirestore, collection, doc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, query, runTransaction, Timestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+  import { 
+    getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken
+  } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
 
-    // ===============================
-    // 🔥 FIREBASE CONFIG
-    // ===============================
-    const firebaseConfig = {
-      apiKey: "AIzaSyDVkLKGH6Q3ZFtetUufmNdVKZyqQL2M0Mo",
-      authDomain: "sistemmanajementool.firebaseapp.com",
-      projectId: "sistemmanajementool",
-      storageBucket: "sistemmanajementool.appspot.com",
-      messagingSenderId: "1019326909025",
-      appId: "1:1019326909025:web:d5991cd76ec14774367820",
-      measurementId: "G-J9VL1CCZRZ"
-    };
+const firebaseConfig = {
+  apiKey: "AIzaSyDVkLKGH6Q3ZFtetUufmNdVKZyqQL2M0Mo",
+  authDomain: "sistemmanajementool.firebaseapp.com",
+  projectId: "sistemmanajementool",
+  storageBucket: "sistemmanajementool.appspot.com",
+  messagingSenderId: "1019326909025",
+  appId: "1:1019326909025:web:d5991cd76ec14774367820",
+  measurementId: "G-J9VL1CCZRZ"
+};
+// ============================
+// CLOUDINARY CONFIG & UPLOAD HELPER
+// ============================
+const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/dsx8o0bf5/image/upload";
+const CLOUDINARY_UPLOAD_PRESET = "unsigned_eviden"; // preset yang kamu buat (unsigned)
 
-    // ===============================
-    // ☁️ CLOUDINARY CONFIG
-    // ===============================
-    const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/dsx8o0bf5/image/upload";
-    const CLOUDINARY_UPLOAD_PRESET = "unsigned_eviden";
+async function uploadToCloudinary(file) {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
 
-    async function uploadToCloudinary(file) {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-      try {
-        const res = await fetch(CLOUDINARY_UPLOAD_URL, { method: "POST", body: formData });
-        const data = await res.json();
-        return data.secure_url;
-      } catch (err) {
-        console.error("Upload ke Cloudinary gagal:", err);
-        return null;
-      }
+    const res = await fetch(CLOUDINARY_UPLOAD_URL, {
+      method: "POST",
+      body: formData
+    });
+    const data = await res.json();
+    // jika gagal Cloudinary biasanya mengembalikan object error
+    if (!data || !data.secure_url) {
+      console.error("Cloudinary upload response:", data);
+      return null;
     }
+    return data.secure_url; // URL final (https)
+  } catch (err) {
+    console.error("Upload ke Cloudinary gagal:", err);
+    return null;
+  }
+}
 
-    // ===============================
-    // 🔧 FIREBASE INIT
-    // ===============================
-    let db, auth, userId;
-    let isAdmin = false;
-    let allTools = [];
-    let allLendings = [];
 
+// Variabel Firebase dan Authentication
+// Definisikan variabel lain menggunakan objek konfigurasi yang valid
+       
+ 
+     
+        
+        const ADMIN_USERNAME = "admin";
+        const ADMIN_PASSWORD = "admin";
+        // ===========================================
+
+        // Konstanta API Gemini
+        const GEMINI_API_KEY = "";
+        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`;
+        
+        // ===========================================
+        // FUNGSI UTILITIES
+        // ===========================================
+        const getBorrowedQty = (toolId) => {
+            return allLendings
+                .filter(l => l.toolId === toolId && !l.isReturned)
+                .reduce((sum, loan) => sum + loan.borrowedQty, 0);
+        };
+        // ============================
+// ============================
+  // 🔧 Deklarasi variabel global
+  // ============================
+  let appId;
+  let db;
+  let auth;
+  let userId;
+  let isAdmin = false;
+  let isAuthReady = false;
+  let initialAuthToken = null;
+
+  // ✅ Variabel tambahan yang wajib ada
+  let currentView = "dashboard";
+  let currentInventoryFilter = "all";
+  let allTools = [];
+  let allLendings = [];
+
+  // ============================
+  // 🔐 Login & Modal
+  // ============================
+  window.openLoginModal = () => {
+    document.getElementById("login-modal").classList.remove("hidden");
+    document.getElementById("login-error").classList.add("hidden");
+  };
+
+  window.closeLoginModal = () => {
+    document.getElementById("login-modal").classList.add("hidden");
+  };
+
+  // ============================
+  // 🧑‍💻 Handle Login Admin
+  // ============================
+  window.handleAdminLogin = async (event) => {
+    event.preventDefault();
+
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+
+    if (username === "admin" && password === "admin123") {
+      isAdmin = true;
+      updateUIBasedOnRole();
+      closeLoginModal();
+    } else {
+      const errorBox = document.getElementById("login-error");
+      errorBox.classList.remove("hidden");
+      errorBox.textContent = "Username atau password salah.";
+    }
+  };
+
+  // ============================
+  // 🧩 Update Tampilan Berdasarkan Role
+  // ============================
+  
+
+  // ============================
+  // 📋 Navigasi antar tab
+  // ============================
+  window.switchView = (view) => {
+    currentView = view;
+    document.querySelectorAll(".main-section").forEach((section) => {
+      section.classList.add("hidden");
+    });
+    document.getElementById(view).classList.remove("hidden");
+
+    // ubah gaya tombol tab aktif
+    document.querySelectorAll(".tab-button").forEach((btn) => {
+      btn.classList.remove("border-b-2", "border-blue-600", "text-blue-600");
+    });
+    document
+      .querySelector(`[data-view="${view}"]`)
+      .classList.add("border-b-2", "border-blue-600", "text-blue-600");
+  };
+
+window.onload = async () => {
+  try {
     const app = initializeApp(firebaseConfig);
+    const appId = firebaseConfig.appId; // ✅ FIX appId
     db = getFirestore(app);
     auth = getAuth(app);
 
     onAuthStateChanged(auth, async (user) => {
-      if (!user) await signInAnonymously(auth);
-      userId = auth.currentUser?.uid || "guest";
-      loadDataListeners();
-    });
-
-    const getToolCollectionRef = () => collection(db, "tools");
-    const getLendingCollectionRef = () => collection(db, "lendings");
-
-    function getBorrowedQty(toolId) {
-      return allLendings
-        .filter(l => l.toolId === toolId && !l.isReturned)
-        .reduce((sum, l) => sum + l.borrowedQty, 0);
-    }
-
-    // ===============================
-    // 🔄 LISTENER FIRESTORE
-    // ===============================
-    function loadDataListeners() {
-      onSnapshot(query(getToolCollectionRef()), (q) => {
-        allTools = q.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderLendingForm(allTools);
-        renderActiveLendings(allLendings.filter(l => !l.isReturned));
-      });
-      onSnapshot(query(getLendingCollectionRef()), (q) => {
-        allLendings = q.docs.map(d => ({ id: d.id, ...d.data(), borrowDate: d.data().borrowDate?.toDate() }));
-        renderActiveLendings(allLendings.filter(l => !l.isReturned));
-        renderReturnHistory(allLendings.filter(l => l.isReturned));
-      });
-    }
-
-    // ===============================
-    // 📤 PEMINJAMAN DENGAN FOTO CLOUDINARY
-    // ===============================
-    window.addLending = async (event) => {
-      event.preventDefault();
-      const fotoInput = document.getElementById("peminjam-foto-input");
-      const toolId = document.getElementById("pinjam-tool-select").value;
-      const borrowedQty = parseInt(document.getElementById("pinjam-jumlah-input").value);
-      const borrowerName = document.getElementById("peminjam-nama-input").value.trim();
-      const borrowerSection = document.getElementById("peminjam-section-input").value.trim();
-      const keperluan = document.getElementById("peminjam-keperluan-input").value.trim();
-
-      let fotoEvidenURL = "";
-      if (fotoInput.files[0]) {
-        fotoEvidenURL = await uploadToCloudinary(fotoInput.files[0]);
-      }
-
-      const selectedTool = allTools.find(t => t.id === toolId);
-      const newLoanRef = doc(getLendingCollectionRef());
-      await setDoc(newLoanRef, {
-        toolId,
-        toolName: selectedTool.nama,
-        borrowedQty,
-        borrowerName,
-        borrowerSection,
-        keperluan,
-        fotoEvidenURL,
-        borrowDate: Timestamp.now(),
-        isReturned: false
-      });
-      document.getElementById("add-lending-form").reset();
-      alert("✅ Peminjaman berhasil dicatat!");
-    };
-
-    // ===============================
-    // 📸 PENGEMBALIAN DENGAN FOTO CLOUDINARY
-    // ===============================
-    window.finalizeReturn = async () => {
-      const loanId = document.getElementById("finalize-return-btn").getAttribute("data-loan-id");
-      const fileInput = document.getElementById("return-foto-input");
-      const returnerName = document.getElementById("returner-name-input").value.trim();
-      const receiverName = document.getElementById("receiver-name-input").value.trim();
-
-      if (!loanId || !fileInput.files[0]) return alert("Lengkapi semua kolom dan foto!");
-
-      const fotoURL = await uploadToCloudinary(fileInput.files[0]);
-      const loanRef = doc(getLendingCollectionRef(), loanId);
-      await updateDoc(loanRef, {
-        isReturned: true,
-        returnDate: Date.now(),
-        returnerName,
-        receiverName,
-        returnFotoEvidenURL: fotoURL
-      });
-      window.closeModal("return-evidence-modal");
-      alert("✅ Pengembalian berhasil disimpan!");
-    };
-
-    // ===============================
-    // 🖼️ TAMPIL FOTO DI MODAL
-    // ===============================
-    window.openPhotoModal = (evidenceString) => {
-      const modal = document.getElementById("photo-view-modal");
-      const content = document.getElementById("photo-modal-content");
-      const isURL = evidenceString?.startsWith("http");
-
-      content.innerHTML = `
-        <div class="p-6 text-center">
-          <p class="text-gray-700 font-bold mb-4">Bukti Foto Eviden</p>
-          ${isURL
-            ? `<img src="${evidenceString}" class="mx-auto rounded-lg shadow-md max-h-96 object-contain"/>`
-            : `<p class="text-gray-500">Tidak ada bukti foto yang tersimpan.</p>`}
-        </div>`;
-      modal.classList.remove("hidden");
-    };
-
-    window.closeModal = (id) => {
-      document.getElementById(id).classList.add("hidden");
-    };
-
-    // ===============================
-    // 🧾 RENDER & LIST FORM
-    // ===============================
-    function renderLendingForm(tools) {
-      const select = document.getElementById("pinjam-tool-select");
-      select.innerHTML = '<option value="">Pilih Alat...</option>';
-      tools.forEach(t => {
-        const available = t.jumlah - getBorrowedQty(t.id);
-        if (available > 0 && t.kondisi === "baik") {
-          const opt = document.createElement("option");
-          opt.value = t.id;
-          opt.textContent = `${t.nama} (${t.spesifikasi}) - ${available} tersedia`;
-          select.appendChild(opt);
+      if (!user) {
+        try {
+          // ✅ Aman: cek dulu variabelnya
+          if (typeof initialAuthToken !== "undefined" && initialAuthToken) {
+            await signInWithCustomToken(auth, initialAuthToken);
+          } else {
+            await signInAnonymously(auth);
+          }
+        } catch (error) {
+          console.error("Error signing in:", error);
+          userId = crypto.randomUUID();
         }
-      });
-    }
-
-    function renderActiveLendings(lendings) {
-      const tbody = document.getElementById("return-active-body");
-      tbody.innerHTML = "";
-      if (!lendings.length) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-gray-500">Tidak ada pinjaman aktif.</td></tr>`;
-        return;
       }
-      lendings.forEach(l => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="px-4 py-2">${l.toolName}</td>
-          <td class="px-4 py-2 text-center">${l.borrowedQty}</td>
-          <td class="px-4 py-2">${l.borrowerName}</td>
-          <td class="px-4 py-2">${l.keperluan}</td>
-          <td class="px-4 py-2 text-center">
-            <span class="text-blue-600 cursor-pointer" onclick="window.openPhotoModal('${l.fotoEvidenURL || ""}')">Lihat Foto</span>
-          </td>
-          <td class="px-4 py-2 text-right">
-            <button onclick="window.openReturnEvidenceModal('${l.id}')" class="bg-green-600 text-white px-3 py-
+
+      userId = auth.currentUser?.uid || userId;
+      if (document.getElementById("user-id-display")) {
+        document.getElementById("user-id-display").textContent = userId;
+      }
+      isAuthReady = true;
+
+      isAdmin = false;
+      updateUIBasedOnRole();
+
+      loadDataListeners();
+      window.switchView(currentView);
+    });
+  } catch (error) {
+    console.error("Firebase Initialization Failed:", error);
+  }
+};
+
+        // ===========================================
+// 🔗 REFERENSI KOLEKSI FIRESTORE
+// ===========================================
+const getToolCollectionRef = () => collection(db, "tools");
+const getLendingCollectionRef = () => collection(db, "lendings");
+
+        // ===========================================
+        // FUNGSI ROLE MANAGEMENT (LOGIN)
+        // ===========================================
+        const updateUIBasedOnRole = () => {
+            // 1. Tampilkan/Sembunyikan Elemen Admin (Contoh: Form Tambah Alat)
+            const adminElements = document.querySelectorAll('[data-admin-only]');
+            adminElements.forEach(el => {
+                el.classList.toggle('hidden', !isAdmin);
+            });
+            
+            // 2. Update Tampilan Role di Header
+            const roleStatusEl = document.getElementById('role-status-display');
+            const loginBtn = document.getElementById('admin-login-btn');
+            const logoutBtn = document.getElementById('admin-logout-btn');
+
+            if (isAdmin) {
+                roleStatusEl.textContent = 'Mode: Admin';
+                roleStatusEl.classList.remove('bg-gray-200', 'text-gray-700');
+                roleStatusEl.classList.add('bg-green-600', 'text-white');
+                loginBtn.classList.add('hidden');
+                logoutBtn.classList.remove('hidden');
+            } else {
+                roleStatusEl.textContent = 'Mode: Guest (Non-Admin)';
+                roleStatusEl.classList.remove('bg-green-600', 'text-white');
+                roleStatusEl.classList.add('bg-gray-200', 'text-gray-700');
+                loginBtn.classList.remove('hidden');
+                logoutBtn.classList.add('hidden');
+            }
+
+            // 3. Re-render views yang sensitif terhadap peran
+            // Memastikan Inventaris hanya diakses Admin
+            if (!isAdmin && currentView === 'inventory') {
+                window.switchView('dashboard');
+            } else {
+                window.switchView(currentView);
+            }
+        };
+        
+        window.openLoginModal = () => {
+            document.getElementById('login-modal').classList.remove('hidden');
+            document.getElementById('login-error').classList.add('hidden');
+        };
+
+        window.logoutAdmin = () => {
+            isAdmin = false;
+            console.log("Logout Admin, kembali ke Guest Mode.");
+            updateUIBasedOnRole();
+        };
+
+        window.handleAdminLogin = (event) => {
+            event.preventDefault();
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            const errorEl = document.getElementById('login-error');
+
+            if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+                isAdmin = true;
+                window.closeModal('login-modal');
+                updateUIBasedOnRole();
+                console.log("Login Admin berhasil!");
+            } else {
+                errorEl.textContent = "Username atau Password salah.";
+                errorEl.classList.remove('hidden');
+            }
+        };
+
+        // ===========================================
+        // LISTENER FIREBASE
+        // ===========================================
+        const loadDataListeners = () => {
+            if (!isAuthReady || !db || !userId) return;
+
+            // 1. Tools Listener
+            onSnapshot(query(getToolCollectionRef()), (querySnapshot) => {
+                allTools = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                updateAllViews();
+            }, (error) => {
+                console.error("Error listening to Tools: ", error);
+            });
+            
+            // 2. Lendings Listener
+            onSnapshot(query(getLendingCollectionRef()), (querySnapshot) => {
+                allLendings = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), borrowDate: doc.data().borrowDate?.toDate() || new Date() }));
+                updateAllViews();
+            }, (error) => {
+                console.error("Error listening to Lendings: ", error);
+            });
+        };
+
+        const updateAllViews = () => {
+            renderDashboard(allTools);
+            // Memastikan inventory dirender dengan filter saat ini (dan memperhitungkan peran)
+            renderInventoryTable(allTools, currentInventoryFilter); 
+            renderLendingForm(allTools);
+            renderActiveLendings(allLendings.filter(l => !l.isReturned));
+            renderReturnHistory(allLendings.filter(l => l.isReturned));
+        };
+
+        // ===========================================
+        // FUNGSI MODAL UMUM
+        // ===========================================
+        window.closeModal = (id) => {
+            document.getElementById(id || 'inspection-modal').classList.add('hidden');
+        };
+        
+        window.openPhotoModal = (evidenceString) => {
+            window.openPhotoModal = (evidenceString) => {
+  const modal = document.getElementById('photo-view-modal');
+  const content = document.getElementById('photo-modal-content');
+  if (!evidenceString) {
+    content.innerHTML = `<div class="p-6 text-center"><p class="text-gray-700 font-bold mb-4">Tidak ada bukti foto.</p></div>`;
+    modal.classList.remove('hidden');
+    return;
+  }
+
+  const isURL = typeof evidenceString === 'string' && (evidenceString.startsWith('http://') || evidenceString.startsWith('https://'));
+  const isPlaceholder = evidenceString.startsWith('[File Attached]');
+
+  content.innerHTML = `
+    <div class="p-6 text-center">
+      <p class="text-gray-700 font-bold mb-4">Bukti Foto Eviden</p>
+      ${isURL
+        ? `<img src="${evidenceString}" alt="Eviden Foto" class="mx-auto rounded-lg shadow-md max-h-96 object-contain" />`
+        : isPlaceholder
+        ? `<p class="text-xl text-gray-600 font-mono bg-gray-100 p-4 rounded-lg break-all">${evidenceString}</p>`
+        : `<p class="text-red-500">Bukti Foto Tidak Valid.</p>`
+      }
+    </div>
+  `;
+  modal.classList.remove('hidden');
+};
+
+        };
+
+        // ===========================================
+        // FUNGSI RENDER DASHBOARD & CLICK HANDLER
+        // ===========================================
+        const renderDashboard = (tools) => {
+            let totalAll = 0;
+            let totalBaik = 0;
+            let totalRusak = 0;
+            let totalHilang = 0;
+            let totalDipinjam = 0;
+
+            tools.forEach(tool => {
+                const borrowed = getBorrowedQty(tool.id);
+                
+                if (tool.kondisi !== 'hilang') {
+                     totalAll += tool.jumlah;
+                }
+                
+                totalDipinjam += borrowed;
+
+                if (tool.kondisi === 'baik') totalBaik += tool.jumlah;
+                else if (tool.kondisi === 'rusak') totalRusak += tool.jumlah;
+                else if (tool.kondisi === 'hilang') totalHilang += tool.jumlah;
+            });
+            
+            const totalTersedia = totalAll - totalDipinjam - totalRusak;
+
+            // Update DOM Dashboard 
+            const el = (id) => document.getElementById(id);
+            if (el('dash-total-semua')) el('dash-total-semua').textContent = totalAll;
+            if (el('dash-total-baik')) el('dash-total-baik').textContent = totalBaik;
+            if (el('dash-total-rusak')) el('dash-total-rusak').textContent = totalRusak;
+            if (el('dash-total-dipinjam')) el('dash-total-dipinjam').textContent = totalDipinjam;
+            if (el('dash-total-hilang')) el('dash-total-hilang').textContent = totalHilang;
+            if (el('dash-total-tersedia')) el('dash-total-tersedia').textContent = totalTersedia > 0 ? totalTersedia : 0;
+        };
+        
+        window.handleDashboardClick = (filterType) => {
+            currentInventoryFilter = filterType;
+            window.switchView('inventory');
+        };
+
+
+        // ===========================================
+        // FUNGSI RENDER INVENTARIS (INSPEKSI)
+        // ===========================================
+        const renderInventoryTable = (tools, filter = 'all') => {
+            const tbody = document.getElementById('inventory-table-body');
+            const filterDisplay = document.getElementById('inventory-filter-display');
+            const aksiHeader = document.getElementById('inventory-header-aksi');
+            
+            if (!tbody || !filterDisplay || !aksiHeader) return;
+            
+            // Tampilkan/Sembunyikan Header Aksi (Inspeksi) berdasarkan peran
+            aksiHeader.classList.toggle('hidden', !isAdmin);
+            
+            let filteredTools = tools;
+            let filterMessage = 'Menampilkan Semua Tools Aktif dan Terdaftar.';
+            
+            // Logika Filtering
+            if (filter === 'available') {
+                filteredTools = tools.filter(tool => {
+                    const available = tool.jumlah - getBorrowedQty(tool.id);
+                    return available > 0 && tool.kondisi !== 'hilang' && tool.kondisi !== 'rusak';
+                });
+                filterMessage = 'Menampilkan Tools dengan Stok Tersedia (Siap Dipinjam dan Kondisi BAIK).';
+            } else if (filter === 'baik') {
+                filteredTools = tools.filter(tool => tool.kondisi === 'baik');
+                filterMessage = 'Menampilkan Tools dengan Kondisi BAIK.';
+            } else if (filter === 'dipinjam') {
+                const toolsInLoan = new Set(allLendings.filter(l => !l.isReturned).map(l => l.toolId));
+                filteredTools = tools.filter(tool => toolsInLoan.has(tool.id));
+                filterMessage = 'Menampilkan Tools yang Sedang Dipinjam.';
+            } else if (filter === 'rusak') {
+                filteredTools = tools.filter(tool => tool.kondisi === 'rusak');
+                filterMessage = 'Menampilkan Tools dengan Kondisi RUSAK (Perlu Perbaikan).';
+            } else if (filter === 'hilang') {
+                filteredTools = tools.filter(tool => tool.kondisi === 'hilang');
+                filterMessage = 'Menampilkan Tools dengan Status HILANG.';
+            }
+            
+            // Update Filter Message
+            if (filter === 'all') {
+                filterDisplay.classList.add('hidden');
+            } else {
+                filterDisplay.textContent = filterMessage;
+                filterDisplay.classList.remove('hidden');
+            }
+
+            tbody.innerHTML = '';
+
+            if (filteredTools.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${isAdmin ? 7 : 6}" class="py-4 text-center text-gray-500">Tidak ada data alat yang cocok dengan filter.</td></tr>`;
+                return;
+            }
+
+            filteredTools.forEach(tool => {
+                const borrowed = getBorrowedQty(tool.id);
+                const available = tool.jumlah - borrowed;
+                const statusColor = tool.kondisi === 'baik' ? 'bg-green-100 text-green-800' :
+                                    tool.kondisi === 'rusak' ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800';
+
+                const tr = document.createElement('tr');
+                tr.className = 'border-b hover:bg-blue-50';
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">${tool.nama}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">${tool.spesifikasi || '-'}</td>
+                    <td class="px-4 py-3 text-center">${tool.jumlah}</td>
+                    <td class="px-4 py-3 text-center font-semibold text-blue-600">${available}</td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${statusColor}">
+                            ${tool.kondisi.toUpperCase()}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-center">${borrowed}</td>
+                    ${isAdmin ? `
+                        <td class="px-4 py-3 text-right">
+                            <button onclick="openInspectionModal('${tool.id}', '${tool.nama}', '${tool.kondisi}')" class="text-blue-600 hover:text-blue-800 transition duration-150 font-semibold">Inspeksi</button>
+                        </td>
+                    ` : ''}
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+
+        // FUNGSI INSPEKSI MODAL - Hanya bisa dibuka oleh Admin
+        window.openInspectionModal = (toolId, toolName, currentCondition) => {
+            if (!isAdmin) {
+                // Gunakan mekanisme pesan kustom daripada console.error untuk pengalaman pengguna yang lebih baik
+                console.error("Akses ditolak. Hanya Admin yang dapat melakukan inspeksi.");
+                return;
+            }
+            const modal = document.getElementById('inspection-modal');
+            const toolNameEl = document.getElementById('inspection-tool-name');
+            const currentCondEl = document.getElementById('current-condition-display');
+            const form = document.getElementById('inspection-form');
+            const deleteBtn = document.getElementById('delete-tool-btn');
+            
+            toolNameEl.textContent = toolName;
+            currentCondEl.textContent = currentCondition.toUpperCase();
+            form.onsubmit = (e) => window.updateToolCondition(e, toolId);
+            deleteBtn.onclick = () => window.deleteTool(toolId, toolName);
+
+            document.querySelectorAll('input[name="new_condition"]').forEach(radio => {
+                radio.checked = radio.value === currentCondition;
+            });
+            
+            modal.classList.remove('hidden');
+        };
+
+        window.updateToolCondition = async (event, toolId) => {
+            if (!isAdmin) return; // Guard
+            event.preventDefault();
+            const newCondition = document.querySelector('input[name="new_condition"]:checked').value;
+
+            try {
+                const toolRef = doc(getToolCollectionRef(), toolId);
+                await updateDoc(toolRef, { kondisi: newCondition, lastInspection: Timestamp.now() });
+                console.log(`Kondisi alat ${toolId} diubah menjadi ${newCondition}`);
+                window.closeModal('inspection-modal');
+            } catch (error) {
+                console.error("Gagal update kondisi:", error);
+            }
+        };
+
+        window.deleteTool = async (toolId, toolName) => {
+            if (!isAdmin) {
+                console.error("Akses ditolak. Hanya Admin yang dapat menghapus alat.");
+                return;
+            }
+
+            const activeLoans = allLendings.filter(l => l.toolId === toolId && !l.isReturned).length;
+            
+            if (activeLoans > 0) {
+                 console.error(`Gagal menghapus ${toolName}! Alat ini masih memiliki ${activeLoans} pinjaman aktif.`);
+                 return;
+            }
+
+            // Simple confirmation prompt (as per instruction, use custom UI instead of built-in prompt in production)
+            const confirmDelete = prompt('Yakin ingin menghapus semua stok alat '+toolName+' dari inventaris? Ketik YA untuk konfirmasi.');
+            if (confirmDelete !== 'YA') {
+                return;
+            }
+            
+            try {
+                await deleteDoc(doc(getToolCollectionRef(), toolId));
+                window.closeModal('inspection-modal');
+                console.log(`Alat ${toolName} berhasil dihapus.`);
+            } catch (error) {
+                console.error("Error deleting tool:", error);
+            }
+        };
+
+
+        // ===========================================
+        // FUNGSI PEMINJAMAN
+        // ===========================================
+        const renderLendingForm = (tools) => {
+            const select = document.getElementById('pinjam-tool-select');
+            const availableDisplay = document.getElementById('available-qty-display');
+            const pinjamInput = document.getElementById('pinjam-jumlah-input');
+            const pinjamBtn = document.getElementById('pinjam-tool-btn');
+            
+            if (!select || !availableDisplay || !pinjamInput || !pinjamBtn) return;
+
+            select.innerHTML = '<option value="" data-spec="" data-available="0">Pilih Alat...</option>';
+            tools.forEach(tool => {
+                const available = tool.jumlah - getBorrowedQty(tool.id);
+                const isUsable = tool.kondisi === 'baik';
+                
+                if (available > 0 && isUsable) {
+                    const option = document.createElement('option');
+                    option.value = tool.id;
+                    option.setAttribute('data-available', available);
+                    option.setAttribute('data-spec', tool.spesifikasi || 'N/A');
+                    option.textContent = `${tool.nama} (${tool.spesifikasi}) - Tersedia: ${available}`;
+                    select.appendChild(option);
+                }
+            });
+            
+            document.getElementById('add-lending-form').addEventListener('input', window.checkLendingFormValidity);
+            document.getElementById('peminjam-foto-input').addEventListener('change', window.checkLendingFormValidity);
+            window.checkLendingFormValidity();
+            
+            window.updateAvailableQtyDisplay();
+        };
+
+        window.updateAvailableQtyDisplay = () => {
+            const select = document.getElementById('pinjam-tool-select');
+            const availableDisplay = document.getElementById('available-qty-display');
+            const pinjamInput = document.getElementById('pinjam-jumlah-input');
+            const specDisplay = document.getElementById('tool-spec-display');
+            
+            if (!select || !availableDisplay || !pinjamInput || !specDisplay) return;
+
+            const selectedOption = select.options[select.selectedIndex];
+            
+            if (selectedOption && selectedOption.value) {
+                const available = parseInt(selectedOption.getAttribute('data-available'), 10);
+                const spec = selectedOption.getAttribute('data-spec');
+                availableDisplay.textContent = `Stok tersedia: ${available}`;
+                specDisplay.textContent = `Spesifikasi: ${spec}`;
+                pinjamInput.max = available;
+            } else {
+                availableDisplay.textContent = 'Stok tersedia: 0';
+                specDisplay.textContent = 'Spesifikasi: -';
+                pinjamInput.max = 0;
+            }
+            window.checkLendingFormValidity();
+        };
+
+        window.checkLendingFormValidity = () => {
+            const form = document.getElementById('add-lending-form');
+            const pinjamBtn = document.getElementById('pinjam-tool-btn');
+            if (!form || !pinjamBtn) return;
+            
+            const toolSelected = document.getElementById('pinjam-tool-select').value;
+            const borrowerName = document.getElementById('peminjam-nama-input').value.trim();
+            const borrowerSection = document.getElementById('peminjam-section-input').value.trim();
+            const keperluan = document.getElementById('peminjam-keperluan-input').value.trim();
+            
+            const fotoEvidenFile = document.getElementById('peminjam-foto-input').files.length > 0;
+            
+            const borrowedQty = parseInt(document.getElementById('pinjam-jumlah-input').value, 10);
+            const availableQty = parseInt(document.getElementById('pinjam-jumlah-input').max, 10);
+            
+            const isValid = toolSelected && borrowerName && borrowerSection && keperluan && fotoEvidenFile && borrowedQty > 0 && borrowedQty <= availableQty;
+
+            pinjamBtn.disabled = !isValid;
+            pinjamBtn.classList.toggle('opacity-50', !isValid);
+            pinjamBtn.classList.toggle('hover:bg-yellow-700', isValid);
+            pinjamBtn.classList.toggle('bg-gray-400', !isValid);
+            pinjamBtn.classList.toggle('bg-yellow-600', isValid);
+        };
+        
+        window.addLending = async (event) => {
+            // inside window.addLending
+const fotoInput = document.getElementById('peminjam-foto-input');
+let fotoEvidenURL = `[File Attached] ${fotoInput.files[0] ? fotoInput.files[0].name : "Foto_Tidak_Tersedia"}`;
+
+// Jika file tersedia, upload ke Cloudinary terlebih dahulu
+if (fotoInput.files && fotoInput.files[0]) {
+  const uploadedUrl = await uploadToCloudinary(fotoInput.files[0]);
+  if (uploadedUrl) {
+    fotoEvidenURL = uploadedUrl; // simpan URL Cloudinary
+  } else {
+    // fallback: kita tetap simpan placeholder nama file jika upload gagal
+    console.warn("Upload Cloudinary gagal — menyimpan placeholder nama file.");
+  }
+}
+
+// kemudian simpan ke Firestore seperti sebelumnya, tapi gunakan fotoEvidenURL
+const newLoanRef = doc(lendingRef);
+await setDoc(newLoanRef, {
+  toolId: toolId,
+  toolName: selectedTool.nama,
+  borrowedQty: borrowedQty,
+  borrowerName: borrowerName,
+  borrowerSection: borrowerSection,
+  keperluan: keperluan,
+  fotoEvidenURL: fotoEvidenURL, 
+  borrowDate: Timestamp.now(),
+  isReturned: false
+});
+
+        };
+
+        // ===========================================
+        // FUNGSI PENGEMBALIAN & RIWAYAT
+        // ===========================================
+        const renderActiveLendings = (lendings) => {
+            const tbody = document.getElementById('return-active-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            if (lendings.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-gray-500">Tidak ada pinjaman aktif.</td></tr>`;
+                return;
+            }
+
+            lendings.forEach(loan => {
+              
+                const tr = document.createElement('tr');
+                tr.className = 'border-b hover:bg-yellow-50';
+
+                const borrowDate = loan.borrowDate ? new Date(loan.borrowDate).toLocaleDateString('id-ID') : 'N/A';
+                
+                let evidenceDisplay = '';
+if (loan.fotoEvidenURL && (loan.fotoEvidenURL.startsWith('http') || loan.fotoEvidenURL.startsWith('https'))) {
+  // tampilkan thumbnail kecil + link
+  evidenceDisplay = `
+    <div class="flex items-center justify-center space-x-2">
+      <img src="${loan.fotoEvidenURL}" alt="thumb" class="h-12 w-16 object-cover rounded-md shadow-sm" />
+      <span onclick="window.openPhotoModal('${loan.fotoEvidenURL}')" class="text-blue-500 hover:text-blue-700 clickable-text">Lihat</span>
+    </div>
+  `;
+} else {
+  evidenceDisplay = `<span onclick="window.openPhotoModal('${loan.fotoEvidenURL || ''}')" class="text-blue-500 hover:text-blue-700 clickable-text">Lihat Foto Eviden</span>`;
+}
+
+
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">${loan.toolName}</td>
+                    <td class="px-4 py-3 text-center">${loan.borrowedQty}</td>
+                    <td class="px-4 py-3 text-sm">${loan.borrowerName} (${loan.borrowerSection})</td>
+                    <td class="px-4 py-3 text-sm">${loan.keperluan || '-'}</td>
+                    <td class="px-4 py-3 text-sm whitespace-nowrap">${borrowDate}</td>
+                    <td class="px-4 py-3 text-center text-sm">
+                        ${evidenceDisplay}
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <button onclick="window.openReturnEvidenceModal('${loan.id}')" class="bg-green-600 text-white px-3 py-1 rounded-lg text-sm font-semibold hover:bg-green-700 transition duration-150">Kembalikan</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+        
+        const renderReturnHistory = (lendings) => {
+            const tbody = document.getElementById('return-history-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            
+            // Sort by return date descending
+            lendings.sort((a, b) => (b.returnDate || 0) - (a.returnDate || 0));
+
+            if (lendings.length === 0) {
+                 tbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-gray-500">Belum ada riwayat pengembalian.</td></tr>`;
+                 return;
+            }
+
+            lendings.slice(0, 10).forEach(loan => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b hover:bg-gray-50';
+
+                const returnDate = loan.returnDate ? new Date(loan.returnDate).toLocaleDateString('id-ID') : 'N/A';
+                
+                const returnEvidenceDisplay = loan.returnFotoEvidenURL 
+                    ? `<span onclick="window.openPhotoModal('${loan.returnFotoEvidenURL}')" class="text-green-500 hover:text-green-700 clickable-text">Lihat Eviden Kembali</span>`
+                    : `<span class="text-gray-400">N/A</span>`;
+
+                tr.innerHTML = `
+                    <td class="px-4 py-3 text-sm font-medium text-gray-600 whitespace-nowrap">${loan.toolName}</td>
+                    <td class="px-4 py-3 text-center text-sm">${loan.borrowedQty}</td>
+                    <td class="px-4 py-3 text-sm">${loan.borrowerName}</td>
+                    <td class="px-4 py-3 text-sm">${loan.returnerName || '-'}</td>
+                    <td class="px-4 py-3 text-sm">${loan.receiverName || '-'}</td>
+                    <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${returnDate}</td>
+                    <td class="px-4 py-3 text-center text-sm">${returnEvidenceDisplay}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+        
+        window.openReturnEvidenceModal = (loanId) => {
+            const modal = document.getElementById('return-evidence-modal');
+            const form = document.getElementById('return-evidence-form');
+            const fileInput = document.getElementById('return-foto-input');
+            const returnerInput = document.getElementById('returner-name-input');
+            const receiverInput = document.getElementById('receiver-name-input');
+            const submitBtn = document.getElementById('finalize-return-btn');
+            
+            form.reset();
+            submitBtn.setAttribute('data-loan-id', loanId);
+            
+            const checkReturnValidity = () => {
+                const filePresent = fileInput.files.length > 0;
+                const returnerName = returnerInput.value.trim().length > 0;
+                const receiverName = receiverInput.value.trim().length > 0;
+                const isValid = filePresent && returnerName && receiverName;
+
+                submitBtn.disabled = !isValid;
+                submitBtn.classList.toggle('opacity-50', !isValid);
+                submitBtn.classList.toggle('hover:bg-green-700', isValid);
+            };
+
+            fileInput.onchange = checkReturnValidity;
+            returnerInput.oninput = checkReturnValidity;
+            receiverInput.oninput = checkReturnValidity;
+            
+            checkReturnValidity(); 
+
+            modal.classList.remove('hidden');
+        };
+
+        window.finalizeReturn = async () => {
+           // inside window.finalizeReturn
+const fileInput = document.getElementById('return-foto-input');
+let returnFotoEvidenURL = `[File Attached] ${fileInput.files[0] ? fileInput.files[0].name : "Foto_Tidak_Tersedia"}`;
+
+if (fileInput.files && fileInput.files[0]) {
+  const uploadedUrl = await uploadToCloudinary(fileInput.files[0]);
+  if (uploadedUrl) {
+    returnFotoEvidenURL = uploadedUrl;
+  } else {
+    console.warn("Upload Cloudinary gagal saat return — menyimpan placeholder nama file.");
+  }
+}
+
+const loanRef = doc(getLendingCollectionRef(), loanId);
+await updateDoc(loanRef, {
+  isReturned: true,
+  returnDate: Date.now(),
+  returnerName: returnerName,
+  receiverName: receiverName,
+  returnFotoEvidenURL: returnFotoEvidenURL
+});
+
+        };
+
+        // ===========================================
+        // FUNGSI INVENTARIS (TAMBAH ALAT) & GEMINI
+        // ===========================================
+        window.addTool = async (event) => {
+            if (!isAdmin) {
+                console.error("Akses ditolak. Hanya Admin yang dapat menambah alat.");
+                return;
+            }
+            event.preventDefault();
+            const toolRef = getToolCollectionRef();
+            if (!isAuthReady || !toolRef) return;
+            
+            const nama = document.getElementById('nama-alat-input').value.trim();
+            const spesifikasi = document.getElementById('spesifikasi-input').value.trim();
+            const jumlah = parseInt(document.getElementById('jumlah-input').value, 10);
+            const kondisi = document.getElementById('kondisi-input').value;
+
+            if (!nama || !spesifikasi || isNaN(jumlah) || jumlah <= 0 || !kondisi) {
+                console.error("Harap isi Nama Alat, Spesifikasi, dan Jumlah (> 0).");
+                return;
+            }
+
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const newToolRef = doc(toolRef);
+                    transaction.set(newToolRef, {
+                        nama: nama,
+                        spesifikasi: spesifikasi,
+                        jumlah: jumlah,
+                        kondisi: kondisi,
+                        timestamp: Timestamp.now()
+                    });
+                });
+
+                document.getElementById('add-tool-form').reset();
+                
+            } catch (error) {
+                console.error("Error adding document: ", error);
+            }
+        };
+
+        window.generateToolSpec = async () => {
+            if (!isAdmin) return; // Guard
+            const toolName = document.getElementById('nama-alat-input').value;
+            const button = document.getElementById('generate-spec-button');
+            const outputField = document.getElementById('spesifikasi-input');
+            const spinner = document.getElementById('spec-spinner');
+            
+            if (!toolName.trim()) {
+                console.error('Masukkan Nama Alat terlebih dahulu.');
+                return;
+            }
+
+            button.disabled = true;
+            spinner.classList.remove('hidden');
+            outputField.value = "Memuat spesifikasi standar dari Gemini...";
+
+            const systemPrompt = "Anda adalah asisten teknis yang handal. Berikan spesifikasi alat, termasuk ukuran, material, dan rating (jika ada), dalam satu kalimat ringkas dan teknis.";
+            const userQuery = `Berikan spesifikasi teknis untuk alat: ${toolName}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+
+            let responseText = "Gagal memuat spesifikasi.";
+            
+            try {
+                const response = await fetch(GEMINI_API_URL, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || responseText;
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+            }
+
+            outputField.value = responseText;
+            spinner.classList.add('hidden');
+            button.disabled = false;
+        };
+
+        // ===========================================
+        // FUNGSI NAVIGASI TAB
+        // ===========================================
+        window.switchView = (viewName) => { 
+            const prevView = currentView;
+            // Cegah Guest mengakses Inventory
+            if (viewName === 'inventory' && !isAdmin) {
+                 viewName = 'dashboard';
+                 console.log("Guest dialihkan ke Dashboard.");
+            }
+            currentView = viewName;
+            
+            const tabs = ['dashboard', 'inventory', 'lending', 'return'];
+            tabs.forEach(tab => {
+                const view = document.getElementById(`${tab}-view`);
+                const btn = document.getElementById(`${tab}-btn`);
+                
+                if (view && btn) {
+                    // Hanya tampilkan tombol Inventory jika Admin
+                    if (tab === 'inventory') {
+                        btn.classList.toggle('hidden', !isAdmin);
+                    }
+
+                    if (tab === viewName) {
+                        view.classList.remove('hidden');
+                        btn.classList.add('bg-green-100', 'text-green-700', 'shadow-inner');
+                        btn.classList.remove('bg-white', 'text-gray-700');
+                    } else {
+                        view.classList.add('hidden');
+                        btn.classList.add('bg-white', 'text-gray-700');
+                        btn.classList.remove('bg-green-100', 'text-green-700', 'shadow-inner');
+                    }
+                }
+            });
+            
+            // Logic khusus saat berpindah:
+            if (viewName === 'inventory') {
+                if (prevView !== 'dashboard') {
+                    currentInventoryFilter = 'all'; 
+                }
+                renderInventoryTable(allTools, currentInventoryFilter);
+            } else if (viewName === 'lending') {
+                renderLendingForm(allTools);
+            }
+        };
+    </script>
+</head>
+
+<body class="bg-gray-50 font-sans min-h-screen">
+      
+    <header class="bg-green-700 text-white p-4 shadow-xl">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
+            <h1 class="text-3xl font-extrabold tracking-tight">CRC Tool Management</h1>
+            <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                <div id="role-status-display" class="px-3 py-1 rounded-full text-sm font-semibold transition duration-200">
+                    Mode: Guest (Non-Admin)
+                </div>
+                
+                <!-- Tombol Login Admin -->
+                <button id="admin-login-btn" onclick="window.openLoginModal()" class="px-4 py-1.5 rounded-lg text-sm font-semibold bg-blue-600 hover:bg-blue-700 transition duration-200">
+                    Admin Login
+                </button>
+
+                <!-- Tombol Logout Admin (Tersembunyi Awal) -->
+                <button id="admin-logout-btn" onclick="window.logoutAdmin()" class="hidden px-4 py-1.5 rounded-lg text-sm font-semibold bg-red-600 hover:bg-red-700 transition duration-200">
+                    Logout Admin
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 md:p-8">
+        
+        <!-- Tab Navigation (Responsif: menggunakan flex dan margin yang sesuai) -->
+        <div class="flex flex-wrap border-b border-gray-200 mb-6 sticky top-0 bg-gray-50 z-10 p-2 rounded-xl card shadow-sm">
+            <button id="dashboard-btn" onclick="switchView('dashboard')" class="flex-1 min-w-max px-3 py-2 text-sm font-medium rounded-lg transition duration-200 m-0.5">
+                Dashboard
+            </button>
+            <!-- Tombol ini disembunyikan jika Guest, ditampilkan jika Admin (Logic ada di switchView) -->
+            <button id="inventory-btn" onclick="switchView('inventory')" class="flex-1 min-w-max px-3 py-2 text-sm font-medium rounded-lg transition duration-200 m-0.5 hidden">
+                Inventaris & Stok
+            </button>
+            <button id="lending-btn" onclick="switchView('lending')" class="flex-1 min-w-max px-3 py-2 text-sm font-medium rounded-lg transition duration-200 m-0.5">
+                Peminjaman
+            </button>
+            <button id="return-btn" onclick="switchView('return')" class="flex-1 min-w-max px-3 py-2 text-sm font-medium rounded-lg transition duration-200 m-0.5">
+                Pengembalian & Riwayat
+            </button>
+        </div>
+        
+        <!-- ============================================== -->
+        <!-- VIEW 1: DASHBOARD -->
+        <!-- ============================================== -->
+        <div id="dashboard-view" class="tab-content">
+            <h2 class="text-3xl font-bold text-gray-700 mb-6">Resume Aset Tools</h2>
+            <!-- Grid 2 kolom di ponsel, 5 kolom di desktop -->
+            <section class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <!-- Total Semua Alat (TIDAK TERMASUK HILANG) -->
+                <div onclick="window.handleDashboardClick('all')" class="clickable-card bg-white p-5 rounded-xl border-t-4 border-green-500">
+                    <p class="text-sm font-medium text-gray-500">Total Alat (Aktif)</p>
+                    <p id="dash-total-semua" class="text-3xl md:text-4xl font-extrabold text-green-700 mt-1">0</p>
+                    <p class="text-xs text-gray-400 mt-1">Stok Total - Hilang</p>
+                </div>
+                <!-- Total Tersedia (Siap Dipinjam) -->
+                <div onclick="window.handleDashboardClick('available')" class="clickable-card bg-white p-5 rounded-xl border-t-4 border-blue-500">
+                    <p class="text-sm font-medium text-gray-500">Stok Tersedia</p>
+                    <p id="dash-total-tersedia" class="text-3xl md:text-4xl font-extrabold text-blue-700 mt-1">0</p>
+                    <p class="text-xs text-gray-400 mt-1">Siap untuk digunakan</p>
+                </div>
+                <!-- Kondisi Baik -->
+                <div onclick="window.handleDashboardClick('baik')" class="clickable-card bg-white p-5 rounded-xl border-t-4 border-indigo-500">
+                    <p class="text-sm font-medium text-gray-500">Kondisi Baik</p>
+                    <p id="dash-total-baik" class="text-3xl md:text-4xl font-extrabold text-indigo-700 mt-1">0</p>
+                </div>
+                <!-- Sedang Dipinjam -->
+                <div onclick="window.handleDashboardClick('dipinjam')" class="clickable-card bg-white p-5 rounded-xl border-t-4 border-yellow-500">
+                    <p class="text-sm font-medium text-gray-500">Sedang Dipinjam</p>
+                    <p id="dash-total-dipinjam" class="text-3xl md:text-4xl font-extrabold text-yellow-700 mt-1">0</p>
+                </div>
+                <!-- Kondisi Hilang -->
+                <div onclick="window.handleDashboardClick('hilang')" class="clickable-card bg-white p-5 rounded-xl border-t-4 border-red-500">
+                    <p class="text-sm font-medium text-gray-500">Kondisi Hilang</p>
+                    <p id="dash-total-hilang" class="text-3xl md:text-4xl font-extrabold text-red-700 mt-1">0</p>
+                </div>
+            </section>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- VIEW 2: INVENTARIS & STOK (ADMIN ONLY) -->
+        <!-- ============================================== -->
+        <div id="inventory-view" class="tab-content hidden">
+            
+            <!-- Tambah Alat Baru (ADMIN ONLY) -->
+            <section data-admin-only class="bg-white p-6 rounded-xl shadow-lg mb-8 card">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">Tambah Alat Baru</h2>
+                <!-- Grid 1 kolom di ponsel, 4 kolom di desktop -->
+                <form id="add-tool-form" onsubmit="window.addTool(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <!-- Nama Alat -->
+                    <div class="md:col-span-1">
+                        <label for="nama-alat-input" class="block text-sm font-medium text-gray-700 mb-1">Nama Alat</label>
+                        <input type="text" id="nama-alat-input" required placeholder="Contoh: Kunci Pas 10mm" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    
+                    <!-- Spesifikasi & Gemini -->
+                    <div class="md:col-span-2">
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="spesifikasi-input" class="block text-sm font-medium text-gray-700">Spesifikasi</label>
+                            <button type="button" id="generate-spec-button" onclick="window.generateToolSpec()" class="flex items-center bg-purple-500 text-white text-xs font-semibold px-3 py-1 rounded-full hover:bg-purple-600 transition duration-200 disabled:opacity-50">
+                                 <span id="spec-spinner" class="loading-spinner mr-2 hidden"></span>
+                                 ✨ Sarankan Spek
+                            </button>
+                        </div>
+                        <input type="text" id="spesifikasi-input" required placeholder="Contoh: Chrome Vanadium, 10mm" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500">
+                    </div>
+                    
+                    <!-- Jumlah -->
+                    <div>
+                        <label for="jumlah-input" class="block text-sm font-medium text-gray-700 mb-1">Jumlah Stok Masuk</label>
+                        <input type="number" id="jumlah-input" required min="1" value="1" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500">
+                        <input type="hidden" id="kondisi-input" value="baik"> <!-- Default saat masuk: Baik -->
+                    </div>
+                    
+                    <!-- Tombol Submit -->
+                    <div class="md:col-span-4">
+                        <button type="submit" class="w-full bg-green-600 text-white p-2.5 rounded-lg font-bold hover:bg-green-700 transition duration-200">
+                            TAMBAH ALAT
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Tabel Inspeksi Tool -->
+            <section class="bg-white p-6 rounded-xl shadow-lg card">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">Database Tools & Inspeksi</h2>
+                
+                <!-- Display Filter Status -->
+                <p id="inventory-filter-display" class="bg-blue-100 text-blue-700 p-3 rounded-lg mb-4 text-sm font-semibold hidden"></p>
+
+                <!-- Container untuk scroll horizontal di ponsel -->
+                <div class="tool-table-container">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Nama Alat</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Spesifikasi</th>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Total</th>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Tersedia</th>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Kondisi Saat Ini</th>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Dipinjam</th>
+                                <!-- Header ini disembunyikan jika Guest -->
+                                <th id="inventory-header-aksi" scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Aksi (Admin)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-table-body" class="bg-white divide-y divide-gray-200">
+                            <tr><td colspan="7" class="py-4 text-center text-gray-500">Memuat data inventaris...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- VIEW 3: PEMINJAMAN (BORROW) (GUEST/ADMIN ACCESS) -->
+        <!-- ============================================== -->
+        <div id="lending-view" class="tab-content hidden">
+            <h2 class="text-3xl font-bold text-gray-700 mb-6">Catat Peminjaman Alat</h2>
+            
+            <section class="bg-white p-6 rounded-xl shadow-lg card">
+                <form id="add-lending-form" onsubmit="window.addLending(event)">
+                    <!-- Grid 1 kolom di ponsel, 2 kolom di desktop -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Alat & QTY -->
+                        <div class="md:col-span-1">
+                            <label for="pinjam-tool-select" class="block text-sm font-medium text-gray-700 mb-1">Pilih Alat <span class="text-red-500">*</span></label>
+                            <select id="pinjam-tool-select" required onchange="window.updateAvailableQtyDisplay()" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500">
+                                <option value="">Memuat Tools...</option>
+                            </select>
+                            <p id="tool-spec-display" class="text-xs text-gray-500 mt-1">Spesifikasi: -</p>
+                        </div>
+
+                        <!-- Jumlah Pinjam -->
+                        <div>
+                            <label for="pinjam-jumlah-input" class="block text-sm font-medium text-gray-700 mb-1">Jumlah Pinjam <span class="text-red-500">*</span></label>
+                            <input type="number" id="pinjam-jumlah-input" required min="1" value="1" oninput="window.checkLendingFormValidity()" placeholder="QTY" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500">
+                            <p id="available-qty-display" class="text-xs text-green-600 mt-1">Stok tersedia: 0</p>
+                        </div>
+                        
+                        <!-- Nama Peminjam -->
+                        <div>
+                            <label for="peminjam-nama-input" class="block text-sm font-medium text-gray-700 mb-1">Nama Peminjam <span class="text-red-500">*</span></label>
+                            <input type="text" id="peminjam-nama-input" required placeholder="Contoh: Budi Santoso" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500">
+                        </div>
+                        
+                        <!-- Section Peminjam -->
+                        <div>
+                            <label for="peminjam-section-input" class="block text-sm font-medium text-gray-700 mb-1">Section Peminjam <span class="text-red-500">*</span></label>
+                            <input type="text" id="peminjam-section-input" required placeholder="Contoh: Maintenance / QC" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500">
+                        </div>
+
+                        <!-- Keperluan (Full Width) -->
+                        <div class="md:col-span-2">
+                            <label for="peminjam-keperluan-input" class="block text-sm font-medium text-gray-700 mb-1">Keperluan <span class="text-red-500">*</span></label>
+                            <input type="text" id="peminjam-keperluan-input" required placeholder="Untuk proyek X di Area Y" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500">
+                        </div>
+
+                        <!-- Bukti Foto (Mandatori) (Full Width) -->
+                        <div class="md:col-span-2">
+                            <label for="peminjam-foto-input" class="block text-sm font-medium text-gray-700 mb-1">Bukti Foto Eviden (Mandatori) <span class="text-red-500">*</span></label>
+                            <div class="text-xs text-gray-500 mb-1">Tekan tombol ini untuk simulasi pengambilan gambar dari kamera/galeri perangkat.</div>
+                            <input type="file" id="peminjam-foto-input" required 
+                                accept="image/*" 
+                                capture="environment" 
+                                onchange="window.checkLendingFormValidity()"
+                                class="w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-yellow-500 file:text-white hover:file:bg-yellow-600">
+                        </div>
+                    </div>
+
+                    <div class="mt-6">
+                        <button type="submit" id="pinjam-tool-btn" disabled class="w-full bg-gray-400 text-white p-3 rounded-lg font-bold transition duration-200 opacity-50">
+                            PINJAM (Isi Semua Kolom)
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </div>
+        
+        <!-- ============================================== -->
+        <!-- VIEW 4: PENGEMBALIAN & RIWAYAT (GUEST/ADMIN ACCESS) -->
+        <!-- ============================================== -->
+        <div id="return-view" class="tab-content hidden">
+            <h2 class="text-3xl font-bold text-gray-700 mb-6">Pengembalian Alat & Riwayat</h2>
+
+            <!-- Peminjaman Aktif -->
+            <section class="bg-white p-6 rounded-xl shadow-lg mb-8 card">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2 text-yellow-600">Pinjaman Aktif</h3>
+                <!-- Container untuk scroll horizontal di ponsel -->
+                <div class="tool-table-container">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Alat</th>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">QTY</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Peminjam</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Keperluan</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Tgl Pinjam</th>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Eviden Pinjam</th>
+                                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="return-active-body" class="bg-white divide-y divide-gray-200">
+                            <tr><td colspan="7" class="py-4 text-center text-gray-500">Memuat pinjaman aktif...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Riwayat Pengembalian -->
+            <section class="bg-white p-6 rounded-xl shadow-lg card">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2 text-green-600">Riwayat 10 Pengembalian Terakhir</h3>
+                <!-- Container untuk scroll horizontal di ponsel -->
+                <div class="tool-table-container">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Alat</th>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">QTY</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Peminjam (Awal)</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pengembali</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Penerima (Petugas)</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Tgl Kembali</th>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Eviden Kembali</th>
+                            </tr>
+                        </thead>
+                        <tbody id="return-history-body" class="bg-white divide-y divide-gray-200">
+                            <tr><td colspan="7" class="py-4 text-center text-gray-500">Memuat riwayat...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+    </main>
+
+    <!-- Modal LOGIN ADMIN -->
+    <div id="login-modal" class="modal fixed inset-0 hidden flex items-center justify-center p-4" onclick="window.closeModal('login-modal')">
+        <div class="bg-white rounded-xl p-8 w-full max-w-sm shadow-2xl" onclick="event.stopPropagation()">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2 text-blue-600">Login Admin</h3>
+            <p class="text-sm text-gray-600 mb-4">Akses ini memberikan hak untuk menambah dan mengedit inventaris.</p>
+            <form id="admin-login-form" onsubmit="window.handleAdminLogin(event)">
+                <div class="mb-4">
+                    <label for="login-username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <input type="text" id="login-username" required placeholder="admin" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="mb-6">
+                    <label for="login-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="login-password" required placeholder="admin" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <p id="login-error" class="text-red-500 text-sm mb-4 hidden font-semibold"></p>
+
+                <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">Login</button>
+            </form>
+            <button type="button" onclick="window.closeModal('login-modal')" class="mt-4 w-full text-center text-gray-500 hover:text-gray-700 text-sm">Batal</button>
+        </div>
+    </div>
+
+    <!-- Modal Inspeksi (ADMIN ONLY) -->
+    <div id="inspection-modal" class="modal fixed inset-0 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Inspeksi & Perubahan Status</h3>
+            <p class="text-lg font-semibold mb-3">Alat: <span id="inspection-tool-name" class="text-green-600"></span></p>
+            <p class="text-sm mb-4">Kondisi Saat Ini: <span id="current-condition-display" class="font-bold text-red-500"></span></p>
+            
+            <form id="inspection-form">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Ubah Status Kondisi Alat:</label>
+                <div class="space-y-2">
+                    <label class="flex items-center space-x-3 bg-green-50 p-3 rounded-lg border border-green-200">
+                        <input type="radio" name="new_condition" value="baik" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500">
+                        <span class="text-sm font-medium text-green-800">BAIK (Siap digunakan)</span>
+                    </label>
+                    <label class="flex items-center space-x-3 bg-red-50 p-3 rounded-lg border border-red-200">
+                        <input type="radio" name="new_condition" value="rusak" class="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500">
+                        <span class="text-sm font-medium text-red-800">RUSAK (Perlu perbaikan)</span>
+                    </label>
+                    <label class="flex items-center space-x-3 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        <input type="radio" name="new_condition" value="hilang" class="h-4 w-4 text-gray-600 border-gray-300 focus:ring-gray-500">
+                        <span class="text-sm font-medium text-gray-800">HILANG (Tidak tercatat/dihapus dari stok aktif)</span>
+                    </label>
+                </div>
+
+                <div class="mt-6 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                    <button type="button" onclick="window.closeModal('inspection-modal')" class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">Batal</button>
+                    <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">Update Status</button>
+                </div>
+            </form>
+            <button id="delete-tool-btn" class="mt-4 w-full text-center text-red-500 hover:text-red-700 text-sm">Hapus Semua Stok Alat Ini</button>
+        </div>
+    </div>
+
+    <!-- Modal VIEW PHOTO Eviden -->
+    <div id="photo-view-modal" class="modal fixed inset-0 hidden flex items-center justify-center p-4" onclick="window.closeModal('photo-view-modal')">
+        <div class="bg-white rounded-xl p-6 w-full max-w-lg shadow-2xl" onclick="event.stopPropagation()">
+            <div id="photo-modal-content">
+                <!-- Content will be injected by JS -->
+            </div>
+            <div class="mt-4 text-center">
+                <button type="button" onclick="window.closeModal('photo-view-modal')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal ATTACH RETURN Eviden -->
+    <div id="return-evidence-modal" class="modal fixed inset-0 hidden flex items-center justify-center p-4" onclick="window.closeModal('return-evidence-modal')">
+        <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl" onclick="event.stopPropagation()">
+            <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2 text-green-600">Catat Pengembalian Alat</h3>
+            <p class="text-sm text-gray-700 mb-4">Mohon lengkapi detail dan lampirkan bukti foto pengembalian.</p>
+            
+            <form id="return-evidence-form" onsubmit="event.preventDefault(); window.finalizeReturn();">
+                <!-- Nama Pengembali -->
+                <div class="mb-4">
+                    <label for="returner-name-input" class="block text-sm font-medium text-gray-700 mb-1">Nama Pengembali <span class="text-red-500">*</span></label>
+                    <input type="text" id="returner-name-input" required placeholder="Contoh: Budi Santoso" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500">
+                </div>
+                <!-- Nama Penerima -->
+                <div class="mb-4">
+                    <label for="receiver-name-input" class="block text-sm font-medium text-gray-700 mb-1">Nama Penerima (Petugas Gudang) <span class="text-red-500">*</span></label>
+                    <input type="text" id="receiver-name-input" required placeholder="Contoh: Petugas CRC" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500">
+                </div>
+
+                <!-- Bukti Foto Pengembalian -->
+                <div class="mb-6">
+                    <label for="return-foto-input" class="block text-sm font-medium text-gray-700 mb-1">Bukti Foto Pengembalian (Mandatori) <span class="text-red-500">*</span></label>
+                    <div class="text-xs text-gray-500 mb-1">Ambil foto alat saat dikembalikan.</div>
+                    <input type="file" id="return-foto-input" required 
+                        accept="image/*" 
+                        capture="environment" 
+                        class="w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-500 file:text-white hover:file:bg-green-600">
+                </div>
+
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                    <button type="button" onclick="window.closeModal('return-evidence-modal')" class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">Batal</button>
+                    <button type="submit" id="finalize-return-btn" disabled class="flex-1 px-4 py-2 bg-gray-400 text-white rounded-lg font-bold transition duration-200 opacity-50">
+                        Konfirmasi Pengembalian
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
