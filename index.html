@@ -727,9 +727,6 @@ pinjamButton.addEventListener("click", async (event) => {
                 tbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-gray-500">Tidak ada pinjaman aktif.</td></tr>`;
                 return;
             }
-const statusHTML = loan.isReturned
-  ? `<span class="status-label text-green-600 font-semibold">Dikembalikan</span>`
-  : `<span class="status-label text-red-600 font-semibold">Dipinjam</span>`;
 
             lendings.forEach(loan => {
               
@@ -790,11 +787,6 @@ if (loan.fotoEvidenURL && (loan.fotoEvidenURL.startsWith('http') || loan.fotoEvi
     tbody.innerHTML = `<tr><td colspan="8" class="py-4 text-center text-gray-500">Belum ada riwayat peminjaman/pengembalian.</td></tr>`;
     return;
   }
-const kondisiHTML = `
-  <span class="kondisi-label ${loan.condition === 'rusak' ? 'text-red-600' : 'text-green-600'}">
-    ${loan.condition}
-  </span>
-`;
 
   allSorted.forEach(loan => {
     const tr = document.createElement('tr');
@@ -1081,35 +1073,6 @@ async function hapusSemuaDataDatabase() {
 }
 
 document.getElementById("dev-delete-db-btn").addEventListener("click", hapusSemuaDataDatabase);
-
-// ============================================================
-// 🔎 FITUR FILTER & SEARCH UNTUK PEMINJAMAN AKTIF
-// ============================================================
-const searchActiveInput = document.getElementById("search-active-lending");
-const filterActiveSelect = document.getElementById("filter-active-status");
-
-searchActiveInput.addEventListener("input", filterActiveLendings);
-filterActiveSelect.addEventListener("change", filterActiveLendings);
-
-function filterActiveLendings() {
-  const keyword = searchActiveInput.value.toLowerCase();
-  const filterStatus = filterActiveSelect.value;
-  const list = document.querySelectorAll("#active-lendings-table tbody tr");
-
-  list.forEach(row => {
-    const text = row.textContent.toLowerCase();
-    const returned = row.querySelector(".status-label")?.textContent.toLowerCase().includes("dikembalikan");
-
-    let matchKeyword = text.includes(keyword);
-    let matchStatus = 
-      filterStatus === "all" ||
-      (filterStatus === "belum" && !returned) ||
-      (filterStatus === "sudah" && returned);
-
-    row.style.display = matchKeyword && matchStatus ? "" : "none";
-  });
-}
-
 
 
     </script>
