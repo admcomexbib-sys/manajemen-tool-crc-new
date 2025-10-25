@@ -590,7 +590,6 @@ const getLendingCollectionRef = () => collection(db, "lendings");
         };
         
         window.addLending = async (event) => {
-           
             event.preventDefault();
             const lendingRef = getLendingCollectionRef();
             const pinjamBtn = document.getElementById('pinjam-tool-btn');
@@ -927,7 +926,6 @@ async function uploadEvidenToCloudinary(file) {
     return "";
   }
 }
-
 
 
 // ============================
