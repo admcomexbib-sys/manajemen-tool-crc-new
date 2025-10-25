@@ -74,49 +74,10 @@ let appId;
 let db;
 let auth;
 let userId;
-let isAdmin = false;
+
 let isAuthReady = false;
 let initialAuthToken = null;
 
-// ============================
-// 🔥 Jalankan setelah window ready
-// ============================
-window.onload = async () => {
-  try {
-    const app = initializeApp(firebaseConfig);
-    appId = firebaseConfig.appId; // ✅ Simpan ke variabel global
-    db = getFirestore(app);
-    auth = getAuth(app);
-
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        try {
-          if (typeof initialAuthToken !== "undefined" && initialAuthToken) {
-            await signInWithCustomToken(auth, initialAuthToken);
-          } else {
-            await signInAnonymously(auth);
-          }
-        } catch (error) {
-          console.error("Error signing in:", error);
-          userId = crypto.randomUUID();
-        }
-      }
-
-      userId = auth.currentUser?.uid || userId;
-      isAuthReady = true;
-
-      // Perbarui UI
-      isAdmin = false;
-      updateUIBasedOnRole();
-
-      // Mulai dengarkan data dari Firestore
-      loadDataListeners();
-      window.switchView(currentView);
-    });
-  } catch (error) {
-    console.error("Firebase Initialization Failed:", error);
-  }
-};
 
         const getToolCollectionRef = () => collection(db, `artifacts/${appId}/users/${userId}/crc_tools`);
         const getLendingCollectionRef = () => collection(db, `artifacts/${appId}/users/${userId}/crc_lendings`);
