@@ -120,23 +120,7 @@ const firebaseConfig = {
   // ============================
   // 🧩 Update Tampilan Berdasarkan Role
   // ============================
-  function updateUIBasedOnRole() {
-    const modeText = document.getElementById("user-mode");
-    if (isAdmin) {
-      modeText.textContent = "Mode: Admin";
-      document.querySelectorAll(".admin-only").forEach((el) => {
-        el.classList.remove("hidden");
-      });
-    } else {
-      modeText.textContent = "Mode: Guest (Non-Admin)";
-      document.querySelectorAll(".admin-only").forEach((el) => {
-        el.classList.add("hidden");
-      });
-    }
-
-    // ✅ Gunakan currentView agar sesuai tab aktif
-    switchView(currentView);
-  }
+  
 
   // ============================
   // 📋 Navigasi antar tab
@@ -200,7 +184,40 @@ window.onload = async () => {
         // ===========================================
         // FUNGSI ROLE MANAGEMENT (LOGIN)
         // ===========================================
-        
+        const updateUIBasedOnRole = () => {
+            // 1. Tampilkan/Sembunyikan Elemen Admin (Contoh: Form Tambah Alat)
+            const adminElements = document.querySelectorAll('[data-admin-only]');
+            adminElements.forEach(el => {
+                el.classList.toggle('hidden', !isAdmin);
+            });
+            
+            // 2. Update Tampilan Role di Header
+            const roleStatusEl = document.getElementById('role-status-display');
+            const loginBtn = document.getElementById('admin-login-btn');
+            const logoutBtn = document.getElementById('admin-logout-btn');
+
+            if (isAdmin) {
+                roleStatusEl.textContent = 'Mode: Admin';
+                roleStatusEl.classList.remove('bg-gray-200', 'text-gray-700');
+                roleStatusEl.classList.add('bg-green-600', 'text-white');
+                loginBtn.classList.add('hidden');
+                logoutBtn.classList.remove('hidden');
+            } else {
+                roleStatusEl.textContent = 'Mode: Guest (Non-Admin)';
+                roleStatusEl.classList.remove('bg-green-600', 'text-white');
+                roleStatusEl.classList.add('bg-gray-200', 'text-gray-700');
+                loginBtn.classList.remove('hidden');
+                logoutBtn.classList.add('hidden');
+            }
+
+            // 3. Re-render views yang sensitif terhadap peran
+            // Memastikan Inventaris hanya diakses Admin
+            if (!isAdmin && currentView === 'inventory') {
+                window.switchView('dashboard');
+            } else {
+                window.switchView(currentView);
+            }
+        };
         
         window.openLoginModal = () => {
             document.getElementById('login-modal').classList.remove('hidden');
