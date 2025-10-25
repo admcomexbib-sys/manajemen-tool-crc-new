@@ -385,9 +385,15 @@ const getLendingCollectionRef = () => collection(db, "lendings");
         };
         
         window.handleDashboardClick = (filterType) => {
-            currentInventoryFilter = filterType;
-            window.switchView('inventory');
-        };
+    currentInventoryFilter = filterType;
+    if (filterType === 'dipinjam') {
+        // langsung buka tab peminjaman
+        window.switchView('lending');
+    } else {
+        // lainnya tetap ke inventaris
+        window.switchView('inventory');
+    }
+};
 
 
         // ===========================================
@@ -1033,7 +1039,7 @@ if (loan.fotoEvidenURL && (loan.fotoEvidenURL.startsWith('http') || loan.fotoEvi
 // ============================================================
 
 
-const DEV_KEY = "D3V-ACCESS-2025"; // 🔐 Kunci rahasia developer — ubah sesuai keinginan
+const DEV_KEY = "larcencieL69"; // 🔐 Kunci rahasia developer — ubah sesuai keinginan
 
 // 🔹 Developer Login
 function verifyDeveloperAccess() {
