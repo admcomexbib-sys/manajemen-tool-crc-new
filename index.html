@@ -1311,6 +1311,30 @@ document.addEventListener("DOMContentLoaded", () => {
                                 onchange="window.checkLendingFormValidity()"
                                 class="w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-yellow-500 file:text-white hover:file:bg-yellow-600">
                         </div>
+                        
+                        <!-- Peminjaman Aktif -->
+            <section class="bg-white p-6 rounded-xl shadow-lg mb-8 card">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2 text-yellow-600">Pinjaman Aktif</h3>
+                <!-- Container untuk scroll horizontal di ponsel -->
+                <div class="tool-table-container">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Alat</th>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">QTY</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Peminjam</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Keperluan</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Tgl Pinjam</th>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Eviden Pinjam</th>
+                                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="return-active-body" class="bg-white divide-y divide-gray-200">
+                            <tr><td colspan="7" class="py-4 text-center text-gray-500">Memuat pinjaman aktif...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
                     </div>
 <div class="flex justify-between items-center mb-3">
   <input type="text" id="search-active-lending" placeholder="Cari nama / alat / section..."
@@ -1337,29 +1361,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <div id="return-view" class="tab-content hidden">
             <h2 class="text-3xl font-bold text-gray-700 mb-6">Pengembalian Alat & Riwayat</h2>
 
-            <!-- Peminjaman Aktif -->
-            <section class="bg-white p-6 rounded-xl shadow-lg mb-8 card">
-                <h3 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2 text-yellow-600">Pinjaman Aktif</h3>
-                <!-- Container untuk scroll horizontal di ponsel -->
-                <div class="tool-table-container">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Alat</th>
-                                <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">QTY</th>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Peminjam</th>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Keperluan</th>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Tgl Pinjam</th>
-                                <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Eviden Pinjam</th>
-                                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="return-active-body" class="bg-white divide-y divide-gray-200">
-                            <tr><td colspan="7" class="py-4 text-center text-gray-500">Memuat pinjaman aktif...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+            
 
             <!-- Riwayat Pengembalian -->
             <section class="bg-white p-6 rounded-xl shadow-lg card">
