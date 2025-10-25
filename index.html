@@ -590,6 +590,7 @@ const getLendingCollectionRef = () => collection(db, "lendings");
         };
         
         window.addLending = async (event) => {
+           
             event.preventDefault();
             const lendingRef = getLendingCollectionRef();
             const pinjamBtn = document.getElementById('pinjam-tool-btn');
@@ -897,33 +898,37 @@ const getLendingCollectionRef = () => collection(db, "lendings");
         // ============================
 // 📸 Upload dan Simpan Eviden Foto
 // ============================
-async function uploadEvidenAndSave(borrowerName, toolName) {
-  const fotoPeminjaman = document.getElementById("eviden-peminjaman").files[0];
-  const fotoPengembalian = document.getElementById("eviden-pengembalian").files[0];
-  
-  let peminjamanURL = "";
-  let pengembalianURL = "";
+async function uploadEvidenToCloudinary(file) {
+  const cloudName = "MASUKKAN_CLOUD_NAME_KAMU"; // contoh: "crc-tools"
+  const uploadPreset = "unsigned_eviden"; // preset tanpa autentikasi (kita buat di langkah 3)
 
-  if (fotoPeminjaman) {
-    const peminjamanRef = ref(storage, `eviden/peminjaman/${Date.now()}_${fotoPeminjaman.name}`);
-    await uploadBytes(peminjamanRef, fotoPeminjaman);
-    peminjamanURL = await getDownloadURL(peminjamanRef);
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", uploadPreset);
+
+  try {
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await response.json();
+    if (data.secure_url) {
+      console.log("✅ Upload sukses ke Cloudinary:", data.secure_url);
+      return data.secure_url;
+    } else {
+      console.error("❌ Upload gagal:", data);
+      alert("Upload foto gagal.");
+      return "";
+    }
+  } catch (error) {
+    console.error("🚨 Error upload:", error);
+    alert("Terjadi kesalahan saat upload foto.");
+    return "";
   }
-
-  if (fotoPengembalian) {
-    const pengembalianRef = ref(storage, `eviden/pengembalian/${Date.now()}_${fotoPengembalian.name}`);
-    await uploadBytes(pengembalianRef, fotoPengembalian);
-    pengembalianURL = await getDownloadURL(pengembalianRef);
-  }
-
-  await addDoc(collection(db, "lendings"), {
-    borrower: borrowerName,
-    tool: toolName,
-    borrowDate: new Date(),
-    evidenPeminjaman: peminjamanURL,
-    evidenPengembalian: pengembalianURL,
-  });
 }
+
+
 
 // ============================
 // 🖼️ Modal Eviden Foto
