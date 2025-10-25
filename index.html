@@ -25,6 +25,22 @@
     
     <!-- Firebase SDKs -->
     <script type="module">
+        // ============================
+  // 🔧 Deklarasi variabel global
+  // ============================
+  let appId;
+  let db;
+  let auth;
+  let userId;
+  let isAdmin = false;
+  let isAuthReady = false;
+  let initialAuthToken = null;
+
+  // ✅ Variabel tambahan yang wajib ada
+  let currentView = "dashboard";
+  let currentInventoryFilter = "all";
+  let allTools = [];
+  let allLendings = [];
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
   import { 
@@ -68,22 +84,7 @@ const firebaseConfig = {
                 .reduce((sum, loan) => sum + loan.borrowedQty, 0);
         };
         // ============================
-// ============================
-  // 🔧 Deklarasi variabel global
-  // ============================
-  let appId;
-  let db;
-  let auth;
-  let userId;
-  let isAdmin = false;
-  let isAuthReady = false;
-  let initialAuthToken = null;
 
-  // ✅ Variabel tambahan yang wajib ada
-  let currentView = "dashboard";
-  let currentInventoryFilter = "all";
-  let allTools = [];
-  let allLendings = [];
 
   // ============================
   // 🔐 Login & Modal
