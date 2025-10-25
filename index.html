@@ -25,22 +25,6 @@
     
     <!-- Firebase SDKs -->
     <script type="module">
-        // ============================
-  // 🔧 Deklarasi variabel global
-  // ============================
-  let appId;
-  let db;
-  let auth;
-  let userId;
-  let isAdmin = false;
-  let isAuthReady = false;
-  let initialAuthToken = null;
-
-  // ✅ Variabel tambahan yang wajib ada
-  let currentView = "dashboard";
-  let currentInventoryFilter = "all";
-  let allTools = [];
-  let allLendings = [];
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
   import { 
@@ -84,7 +68,22 @@ const firebaseConfig = {
                 .reduce((sum, loan) => sum + loan.borrowedQty, 0);
         };
         // ============================
+// ============================
+  // 🔧 Deklarasi variabel global
+  // ============================
+  let appId;
+  let db;
+  let auth;
+  let userId;
+  let isAdmin = false;
+  let isAuthReady = false;
+  let initialAuthToken = null;
 
+  // ✅ Variabel tambahan yang wajib ada
+  let currentView = "dashboard";
+  let currentInventoryFilter = "all";
+  let allTools = [];
+  let allLendings = [];
 
   // ============================
   // 🔐 Login & Modal
@@ -201,40 +200,7 @@ window.onload = async () => {
         // ===========================================
         // FUNGSI ROLE MANAGEMENT (LOGIN)
         // ===========================================
-        const updateUIBasedOnRole = () => {
-            // 1. Tampilkan/Sembunyikan Elemen Admin (Contoh: Form Tambah Alat)
-            const adminElements = document.querySelectorAll('[data-admin-only]');
-            adminElements.forEach(el => {
-                el.classList.toggle('hidden', !isAdmin);
-            });
-            
-            // 2. Update Tampilan Role di Header
-            const roleStatusEl = document.getElementById('role-status-display');
-            const loginBtn = document.getElementById('admin-login-btn');
-            const logoutBtn = document.getElementById('admin-logout-btn');
-
-            if (isAdmin) {
-                roleStatusEl.textContent = 'Mode: Admin';
-                roleStatusEl.classList.remove('bg-gray-200', 'text-gray-700');
-                roleStatusEl.classList.add('bg-green-600', 'text-white');
-                loginBtn.classList.add('hidden');
-                logoutBtn.classList.remove('hidden');
-            } else {
-                roleStatusEl.textContent = 'Mode: Guest (Non-Admin)';
-                roleStatusEl.classList.remove('bg-green-600', 'text-white');
-                roleStatusEl.classList.add('bg-gray-200', 'text-gray-700');
-                loginBtn.classList.remove('hidden');
-                logoutBtn.classList.add('hidden');
-            }
-
-            // 3. Re-render views yang sensitif terhadap peran
-            // Memastikan Inventaris hanya diakses Admin
-            if (!isAdmin && currentView === 'inventory') {
-                window.switchView('dashboard');
-            } else {
-                window.switchView(currentView);
-            }
-        };
+        
         
         window.openLoginModal = () => {
             document.getElementById('login-modal').classList.remove('hidden');
