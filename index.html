@@ -718,57 +718,109 @@ pinjamButton.addEventListener("click", async (event) => {
         // ===========================================
         // FUNGSI PENGEMBALIAN & RIWAYAT
         // ===========================================
-        function renderActiveLendings(loans) {
-  const tbody = document.querySelector("#active-lendings-table tbody");
-  if (!tbody) return;
+        const renderActiveLendings = (lendings) => {
+            const tbody = document.getElementById('return-active-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
 
-  tbody.innerHTML = "";
+            if (lendings.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-gray-500">Tidak ada pinjaman aktif.</td></tr>`;
+                return;
+            }
+const statusHTML = loan.isReturned
+  ? `<span class="status-label text-green-600 font-semibold">Dikembalikan</span>`
+  : `<span class="status-label text-red-600 font-semibold">Dipinjam</span>`;
 
-  loans.forEach((loan) => {
-    const statusHTML = loan.isReturned
-      ? `<span class="status-label text-green-600 font-semibold">Dikembalikan</span>`
-      : `<span class="status-label text-red-600 font-semibold">Dipinjam</span>`;
+            lendings.forEach(loan => {
+              
+                const tr = document.createElement('tr');
+                tr.className = 'border-b hover:bg-yellow-50';
 
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td class="p-2 border">${loan.toolName}</td>
-      <td class="p-2 border">${loan.borrowerName}</td>
-      <td class="p-2 border">${loan.borrowerSection}</td>
-      <td class="p-2 border">${loan.borrowedQty}</td>
-      <td class="p-2 border">${new Date(loan.borrowDate.seconds * 1000).toLocaleString()}</td>
-      <td class="p-2 border">${statusHTML}</td>
-    `;
-    tbody.appendChild(row);
-  });
+                const borrowDate = loan.borrowDate ? new Date(loan.borrowDate).toLocaleDateString('id-ID') : 'N/A';
+                
+                let evidenceDisplay = '';
+if (loan.fotoEvidenURL && (loan.fotoEvidenURL.startsWith('http') || loan.fotoEvidenURL.startsWith('https'))) {
+  // tampilkan thumbnail kecil + link
+  evidenceDisplay = `
+    <div class="flex items-center justify-center space-x-2">
+      <img src="${loan.fotoEvidenURL}" alt="thumb" class="h-12 w-16 object-cover rounded-md shadow-sm" />
+      <span onclick="window.openPhotoModal('${loan.fotoEvidenURL}')" class="text-blue-500 hover:text-blue-700 clickable-text">Lihat</span>
+    </div>
+  `;
+} else {
+  evidenceDisplay = 
+  loan.fotoEvidenURL && (loan.fotoEvidenURL.startsWith('http://') || loan.fotoEvidenURL.startsWith('https://'))
+    ? `
+      <div class="flex items-center justify-center space-x-2">
+        <img src="${loan.fotoEvidenURL}" alt="Foto Eviden" class="h-12 w-16 object-cover rounded-md shadow-sm cursor-pointer" onclick="window.openPhotoModal('${loan.fotoEvidenURL}')" />
+        <span class="text-blue-500 hover:text-blue-700 clickable-text" onclick="window.openPhotoModal('${loan.fotoEvidenURL}')">Lihat</span>
+      </div>
+    `
+    : `<span onclick="window.openPhotoModal('${loan.fotoEvidenURL || ''}')" class="text-blue-500 hover:text-blue-700 clickable-text">Lihat Foto Eviden</span>`;
+
 }
 
+
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">${loan.toolName}</td>
+                    <td class="px-4 py-3 text-center">${loan.borrowedQty}</td>
+                    <td class="px-4 py-3 text-sm">${loan.borrowerName} (${loan.borrowerSection})</td>
+                    <td class="px-4 py-3 text-sm">${loan.keperluan || '-'}</td>
+                    <td class="px-4 py-3 text-sm whitespace-nowrap">${borrowDate}</td>
+                    <td class="px-4 py-3 text-center text-sm">
+                        ${evidenceDisplay}
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <button onclick="window.openReturnEvidenceModal('${loan.id}')" class="bg-green-600 text-white px-3 py-1 rounded-lg text-sm font-semibold hover:bg-green-700 transition duration-150">Kembalikan</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
         
-        function renderReturnHistory(loans) {
-  const tbody = document.querySelector("#return-history-table tbody");
+        const renderReturnHistory = (lendings) => {
+  const tbody = document.getElementById('return-history-body');
   if (!tbody) return;
+  tbody.innerHTML = '';
 
-  tbody.innerHTML = "";
+  // 🔹 Tampilkan semua data (tidak dibatasi 10)
+  const allSorted = [...lendings].sort((a, b) => (b.returnDate || 0) - (a.returnDate || 0));
 
-  loans.forEach((loan) => {
-    const kondisiHTML = `
-      <span class="kondisi-label ${loan.condition === 'rusak' ? 'text-red-600' : 'text-green-600'}">
-        ${loan.condition}
-      </span>
+  if (allSorted.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="py-4 text-center text-gray-500">Belum ada riwayat peminjaman/pengembalian.</td></tr>`;
+    return;
+  }
+const kondisiHTML = `
+  <span class="kondisi-label ${loan.condition === 'rusak' ? 'text-red-600' : 'text-green-600'}">
+    ${loan.condition}
+  </span>
+`;
+
+  allSorted.forEach(loan => {
+    const tr = document.createElement('tr');
+    tr.className = 'border-b hover:bg-gray-50';
+
+    const borrowDate = loan.borrowDate ? new Date(loan.borrowDate).toLocaleDateString('id-ID') : '-';
+    const returnDate = loan.returnDate ? new Date(loan.returnDate).toLocaleDateString('id-ID') : '-';
+    const returnEvidenceDisplay = loan.returnFotoEvidenURL 
+      ? `<span onclick="window.openPhotoModal('${loan.returnFotoEvidenURL}')" class="text-green-500 hover:text-green-700 clickable-text">Lihat Eviden Kembali</span>`
+      : `<span class="text-gray-400">Belum Ada</span>`;
+
+    tr.innerHTML = `
+      <td class="px-4 py-3 text-sm font-medium text-gray-600 whitespace-nowrap">${loan.toolName}</td>
+      <td class="px-4 py-3 text-center text-sm">${loan.borrowedQty}</td>
+      <td class="px-4 py-3 text-sm">${loan.borrowerName}</td>
+      <td class="px-4 py-3 text-sm">${loan.borrowerSection || '-'}</td>
+      <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${borrowDate}</td>
+      <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${returnDate}</td>
+      <td class="px-4 py-3 text-center text-sm">${returnEvidenceDisplay}</td>
+      <td class="px-4 py-3 text-center text-sm font-semibold ${loan.isReturned ? 'text-green-600' : 'text-red-600'}">
+        ${loan.isReturned ? 'Selesai' : 'Belum Kembali'}
+      </td>
     `;
-
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td class="p-2 border">${loan.toolName}</td>
-      <td class="p-2 border">${loan.borrowerName}</td>
-      <td class="p-2 border">${loan.borrowerSection}</td>
-      <td class="p-2 border">${loan.borrowedQty}</td>
-      <td class="p-2 border">${new Date(loan.returnDate?.seconds * 1000 || 0).toLocaleString()}</td>
-      <td class="p-2 border">${kondisiHTML}</td>
-    `;
-    tbody.appendChild(row);
+    tbody.appendChild(tr);
   });
-}
-
+};
 
         
         window.openReturnEvidenceModal = (loanId) => {
@@ -1058,33 +1110,7 @@ function filterActiveLendings() {
   });
 }
 
-// ============================================================
-// 📜 FITUR FILTER & SEARCH UNTUK RIWAYAT PENGEMBALIAN
-// ============================================================
-const searchReturnInput = document.getElementById("search-return-history");
-const filterReturnSelect = document.getElementById("filter-return-status");
 
-searchReturnInput.addEventListener("input", filterReturnHistory);
-filterReturnSelect.addEventListener("change", filterReturnHistory);
-
-function filterReturnHistory() {
-  const keyword = searchReturnInput.value.toLowerCase();
-  const filterStatus = filterReturnSelect.value;
-  const list = document.querySelectorAll("#return-history-table tbody tr");
-
-  list.forEach(row => {
-    const text = row.textContent.toLowerCase();
-    const condition = row.querySelector(".kondisi-label")?.textContent.toLowerCase();
-
-    let matchKeyword = text.includes(keyword);
-    let matchStatus = 
-      filterStatus === "all" ||
-      (filterStatus === "baik" && condition.includes("baik")) ||
-      (filterStatus === "rusak" && condition.includes("rusak"));
-
-    row.style.display = matchKeyword && matchStatus ? "" : "none";
-  });
-}
 
     </script>
 </head>
