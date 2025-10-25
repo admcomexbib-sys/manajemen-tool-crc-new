@@ -1075,6 +1075,26 @@ async function hapusSemuaDataDatabase() {
 document.getElementById("dev-delete-db-btn").addEventListener("click", hapusSemuaDataDatabase);
 
 
+document.addEventListener("DOMContentLoaded", () => {
+  const sedangPinjamCard = document.getElementById("sedang-pinjam-card"); // id kartu dashboard
+  const tabPeminjamanAktif = document.querySelector('[data-tab="peminjaman-aktif"]'); // tombol/tab nav
+  const tabContents = document.querySelectorAll(".tab-content");
+
+  if (sedangPinjamCard && tabPeminjamanAktif) {
+    sedangPinjamCard.addEventListener("click", () => {
+      // Nonaktifkan semua tab
+      tabContents.forEach(c => c.classList.add("hidden"));
+      
+      // Aktifkan tab Peminjaman Aktif
+      document.getElementById("peminjaman-aktif").classList.remove("hidden");
+
+      // Tandai tab navigasi aktif
+      document.querySelectorAll(".tab-link").forEach(btn => btn.classList.remove("bg-yellow-600"));
+      tabPeminjamanAktif.classList.add("bg-yellow-600");
+    });
+  }
+});
+
     </script>
 </head>
 
