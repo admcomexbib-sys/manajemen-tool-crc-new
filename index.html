@@ -77,6 +77,11 @@ let userId;
 let isAdmin = false;
 let isAuthReady = false;
 
+let currentView = 'dashboard';
+let currentInventoryFilter = 'all';
+let allTools = [];
+let allLendings = [];
+
 
 
         const getToolCollectionRef = () => collection(db, `artifacts/${appId}/users/${userId}/crc_tools`);
