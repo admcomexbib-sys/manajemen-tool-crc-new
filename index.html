@@ -1028,6 +1028,54 @@ if (loan.fotoEvidenURL && (loan.fotoEvidenURL.startsWith('http') || loan.fotoEvi
                 renderLendingForm(allTools);
             }
         };
+        // ============================================================
+// 👨‍💻 FITUR DEVELOPER-ONLY ACCESS
+// ============================================================
+
+import { getFirestore, collection, getDocs, deleteDoc, doc } 
+  from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+
+const DEV_KEY = "D3V-ACCESS-2025"; // 🔐 Kunci rahasia developer — ubah sesuai keinginan
+const db = getFirestore();
+
+// 🔹 Developer Login
+function verifyDeveloperAccess() {
+  const inputKey = prompt("Masukkan Kunci Developer untuk mengaktifkan mode penghapusan database:");
+  if (inputKey === DEV_KEY) {
+    alert("✅ Akses Developer Diterima. Tombol penghapusan database diaktifkan.");
+    document.getElementById("dev-delete-db-btn").style.display = "inline-block";
+  } else {
+    alert("❌ Kunci salah. Akses ditolak.");
+  }
+}
+
+document.getElementById("dev-login-btn").addEventListener("click", verifyDeveloperAccess);
+
+// 🔹 Fungsi Hapus Database
+async function hapusSemuaDataDatabase() {
+  const konfirmasi = confirm("⚠️ Yakin ingin MENGHAPUS SEMUA DATA di database? Tindakan ini tidak bisa dibatalkan!");
+  if (!konfirmasi) return;
+
+  const collections = ["tools", "lendings", "returns"]; // sesuaikan dengan koleksi kamu
+  let totalHapus = 0;
+
+  try {
+    for (const nama of collections) {
+      const snapshot = await getDocs(collection(db, nama));
+      for (const docu of snapshot.docs) {
+        await deleteDoc(doc(db, nama, docu.id));
+        totalHapus++;
+      }
+    }
+    alert(`✅ Semua data berhasil dihapus (${totalHapus} dokumen).`);
+  } catch (error) {
+    console.error("❌ Gagal menghapus database:", error);
+    alert("Terjadi kesalahan saat menghapus data. Cek konsol untuk detail.");
+  }
+}
+
+document.getElementById("dev-delete-db-btn").addEventListener("click", hapusSemuaDataDatabase);
+
     </script>
 </head>
 
@@ -1411,5 +1459,20 @@ if (loan.fotoEvidenURL && (loan.fotoEvidenURL.startsWith('http') || loan.fotoEvi
             </form>
         </div>
     </div>
+    <!-- Tombol Developer Login (tidak mencolok) -->
+<div style="text-align:center; margin-top:40px;">
+  <button id="dev-login-btn"
+    class="text-xs text-gray-500 hover:text-gray-700 underline">
+    Developer Login
+  </button>
+
+  <!-- Tombol Hapus Database (akan muncul hanya untuk developer) -->
+  <button id="dev-delete-db-btn"
+    style="display:none; margin-top:10px;"
+    class="bg-red-700 text-white px-4 py-2 rounded-lg font-bold hover:bg-red-800 transition">
+    🧨 Hapus Semua Data (Developer)
+  </button>
+</div>
+
 </body>
 </html>
